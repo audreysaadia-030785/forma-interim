@@ -6,7 +6,6 @@ import { createClient } from "@/lib/supabase/client";
 
 export function LoginForm() {
   const router = useRouter();
-  const supabase = createClient();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -18,6 +17,7 @@ export function LoginForm() {
     setLoading(true);
     setError(null);
 
+    const supabase = createClient();
     const { data, error: signInError } = await supabase.auth.signInWithPassword(
       { email, password },
     );
@@ -50,6 +50,7 @@ export function LoginForm() {
     }
     setLoading(true);
     setError(null);
+    const supabase = createClient();
     const { error: resetError } = await supabase.auth.resetPasswordForEmail(
       email,
       { redirectTo: `${window.location.origin}/reset-password` },
