@@ -2,6 +2,9 @@ import Link from "next/link";
 import { LoginForm } from "./(auth)/login-form";
 import { BrandMark } from "./components/brand-mark";
 
+// Evite le pre-rendering statique qui tente d'initialiser Supabase sans env vars.
+export const dynamic = "force-dynamic";
+
 export default function LoginPage() {
   return (
     <main className="flex flex-1 min-h-screen">
