@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
 import { BrandMark } from "./brand-mark";
+import { createClient } from "@/lib/supabase/client";
 
 type TopbarProps = {
   role: "client" | "admin";
@@ -146,9 +147,12 @@ export function Topbar({ role, userName, userCompany }: TopbarProps) {
                   <button
                     type="button"
                     className="w-full text-left rounded-lg px-3 py-2 text-sm hover:bg-rose-50 text-rose-600"
-                    onClick={() => {
+                    onClick={async () => {
                       setMenuOpen(false);
+                      const supabase = createClient();
+                      await supabase.auth.signOut();
                       router.push("/");
+                      router.refresh();
                     }}
                   >
                     Se déconnecter

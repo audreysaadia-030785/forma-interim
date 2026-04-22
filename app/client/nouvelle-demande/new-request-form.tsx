@@ -1,9 +1,10 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useTransition } from "react";
 import { RomeCombobox } from "@/app/components/rome-combobox";
 import { suggestHabilitations } from "@/lib/habilitations";
+import { submitRequestAction } from "./actions";
 
 type DurationUnit = "jours" | "semaines" | "mois";
 
@@ -30,8 +31,8 @@ export function NewRequestForm() {
   const [transportAllowance, setTransportAllowance] = useState("");
   const [otherPremium, setOtherPremium] = useState("");
 
-  const [contactName, setContactName] = useState("Jean Martin");
-  const [contactEmail, setContactEmail] = useState("j.martin@exemple.fr");
+  const [contactName, setContactName] = useState("");
+  const [contactEmail, setContactEmail] = useState("");
   const [contactPhone, setContactPhone] = useState("");
 
   const [description, setDescription] = useState("");
@@ -40,7 +41,8 @@ export function NewRequestForm() {
   const [jobSpecFile, setJobSpecFile] = useState<File | null>(null);
   const [dragActive, setDragActive] = useState(false);
 
-  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [submitting, startSubmitting] = useTransition();
 
   const suggested = useMemo(
     () => suggestHabilitations(jobLabel),
@@ -118,9 +120,36 @@ export function NewRequestForm() {
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setSubmitting(true);
-    await new Promise((r) => setTimeout(r, 600));
-    router.push("/client?status=pending");
+    setSubmitError(null);
+
+    const fd = new FormData();
+    fd.set("jobLabel", jobLabel);
+    if (jobCode) fd.set("jobCode", jobCode);
+    fd.set("headcount", String(headcount));
+    fd.set("habilitations", JSON.stringify(habilitations));
+    fd.set("customHabilitations", JSON.stringify(customHabilitations));
+    fd.set("description", description);
+    fd.set("startDate", startDate);
+    fd.set("durationValue", String(durationValue || 0));
+    fd.set("durationUnit", durationUnit);
+    fd.set("location", location);
+    fd.set("hourlyRate", hourlyRate);
+    if (meals) fd.set("meals", meals);
+    if (travelBonus) fd.set("travelBonus", travelBonus);
+    if (transportAllowance) fd.set("transportAllowance", transportAllowance);
+    if (otherPremium) fd.set("otherPremium", otherPremium);
+    fd.set("contactName", contactName);
+    fd.set("contactEmail", contactEmail);
+    fd.set("contactPhone", contactPhone);
+    if (jobSpecFile) fd.set("jobSpec", jobSpecFile);
+
+    startSubmitting(async () => {
+      const res = await submitRequestAction(fd);
+      if (res && !res.ok) {
+        setSubmitError(res.error ?? "Erreur inconnue");
+      }
+      // Sinon, la Server Action redirige automatiquement vers /client.
+    });
   }
 
   function handleFilePick(file: File | null) {
@@ -697,6 +726,27 @@ export function NewRequestForm() {
           </FieldGroup>
         </div>
       </Section>
+
+      {submitError && (
+        <div className="rounded-[var(--radius-card)] bg-rose-50 border border-rose-200 px-4 py-3 text-sm text-rose-700 flex items-start gap-2 animate-fade-up">
+          <svg
+            className="h-4 w-4 mt-0.5 shrink-0"
+            viewBox="0 0 20 20"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            aria-hidden="true"
+          >
+            <circle cx="10" cy="10" r="7" />
+            <path d="M10 6v4m0 3v.01" strokeLinecap="round" />
+          </svg>
+          <span>
+            <strong>Impossible d&apos;envoyer la demande.</strong>
+            <br />
+            {submitError}
+          </span>
+        </div>
+      )}
 
       {/* Barre d'actions */}
       <div className="sticky bottom-4 flex flex-col-reverse sm:flex-row gap-3 justify-end bg-white/90 backdrop-blur rounded-[var(--radius-card)] ring-1 ring-neutral-200 shadow-lg p-3">

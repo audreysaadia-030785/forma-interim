@@ -1,7 +1,29 @@
-import { DEMO_CLIENTS } from "@/lib/demo-data";
+import { createClient } from "@/lib/supabase/server";
 import { ClientsManager } from "./clients-manager";
 
-export default function AdminClientsPage() {
+export const dynamic = "force-dynamic";
+
+export default async function AdminClientsPage() {
+  const supabase = await createClient();
+  const { data: clients } = await supabase
+    .from("clients")
+    .select(
+      "id, company_name, siret, primary_contact_name, email, phone, active, created_at",
+    )
+    .order("created_at", { ascending: false });
+
+  // Conversion snake_case → camelCase attendu par le composant.
+  const rows = (clients ?? []).map((c) => ({
+    id: c.id,
+    companyName: c.company_name,
+    siret: c.siret ?? undefined,
+    primaryContact: c.primary_contact_name,
+    email: c.email,
+    phone: c.phone,
+    active: c.active,
+    createdAt: c.created_at,
+  }));
+
   return (
     <div className="mx-auto max-w-5xl px-4 sm:px-6 py-8 sm:py-12">
       <header className="mb-8 animate-fade-up">
@@ -13,11 +35,11 @@ export default function AdminClientsPage() {
         </h1>
         <p className="mt-2 text-neutral-600 max-w-2xl">
           Créez les comptes clients et gérez leur accès à la plateforme. Un
-          email d'invitation leur sera envoyé avec leurs identifiants.
+          compte et un mot de passe initial leur seront générés.
         </p>
       </header>
 
-      <ClientsManager initial={DEMO_CLIENTS} />
+      <ClientsManager initial={rows} />
     </div>
   );
 }

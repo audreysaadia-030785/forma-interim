@@ -1,8 +1,11 @@
 import Link from "next/link";
-import { DEMO_REQUESTS, type RequestStatus } from "@/lib/demo-data";
+import { createClient } from "@/lib/supabase/server";
 import { RequestCard } from "../components/request-card";
 import { StatsTile } from "../components/stats-tile";
 import { RequestsFilter } from "../components/requests-filter";
+import type { InterimRequest, RequestStatus } from "@/lib/demo-data";
+
+export const dynamic = "force-dynamic";
 
 export default async function ClientDashboardPage({
   searchParams,
@@ -10,32 +13,73 @@ export default async function ClientDashboardPage({
   searchParams: Promise<{ status?: RequestStatus | "all" }>;
 }) {
   const { status = "all" } = await searchParams;
+  const supabase = await createClient();
 
-  const requests =
-    status === "all"
-      ? DEMO_REQUESTS
-      : DEMO_REQUESTS.filter((r) => r.status === status);
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return null;
 
-  const pendingCount = DEMO_REQUESTS.filter(
-    (r) => r.status === "pending",
-  ).length;
-  const proposedCount = DEMO_REQUESTS.filter(
-    (r) => r.status === "proposed",
-  ).length;
-  const validatedCount = DEMO_REQUESTS.filter(
-    (r) => r.status === "validated",
-  ).length;
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("full_name")
+    .eq("id", user.id)
+    .single();
+
+  let query = supabase
+    .from("requests")
+    .select(
+      "id, reference, client_id, job_label, headcount, start_date, duration_value, duration_unit, location, hourly_rate_eur, meal_bonus_eur, status, created_at, clients(company_name)",
+    )
+    .order("created_at", { ascending: false });
+
+  if (status !== "all") query = query.eq("status", status);
+
+  const { data: rawRequests } = await query;
+
+  const requests: InterimRequest[] = (rawRequests ?? []).map((r) => ({
+    id: r.id,
+    clientId: r.client_id,
+    clientCompanyName:
+      // @ts-expect-error relation typed as array by default
+      r.clients?.company_name ?? "",
+    poste: r.job_label,
+    headcount: r.headcount,
+    startDate: r.start_date,
+    duration: `${r.duration_value} ${r.duration_unit}`,
+    location: r.location,
+    hourlyRate: Number(r.hourly_rate_eur),
+    meals: r.meal_bonus_eur ? Number(r.meal_bonus_eur) : null,
+    bonuses: null,
+    allowances: null,
+    contactName: "",
+    contactEmail: "",
+    contactPhone: "",
+    description: "",
+    status: r.status,
+    createdAt: r.created_at,
+    candidates: [],
+  }));
+
+  // KPIs (sur l'ensemble, pas filtrés).
+  const { data: allStatuses } = await supabase
+    .from("requests")
+    .select("status");
+  const pendingCount = (allStatuses ?? []).filter((r) => r.status === "pending").length;
+  const proposedCount = (allStatuses ?? []).filter((r) => r.status === "proposed").length;
+  const validatedCount = (allStatuses ?? []).filter((r) => r.status === "validated").length;
+
+  const firstName = (profile?.full_name ?? "").split(" ")[0] || "";
 
   return (
     <div className="mx-auto max-w-6xl px-4 sm:px-6 py-8 sm:py-12">
-      {/* En-tête — salutation + CTA */}
       <section className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6 mb-10 animate-fade-up">
         <div>
           <p className="text-sm font-semibold uppercase tracking-wider text-accent-500 mb-2">
             Tableau de bord
           </p>
           <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-primary-900">
-            Bonjour Jean 👋
+            Bonjour {firstName || "👋"}
           </h1>
           <p className="mt-2 text-neutral-600">
             Suivez vos demandes en cours et proposez-en de nouvelles en
@@ -64,7 +108,6 @@ export default async function ClientDashboardPage({
         </Link>
       </section>
 
-      {/* Statistiques */}
       <section className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-10 animate-fade-up">
         <StatsTile
           label="En attente de profils"
@@ -90,7 +133,6 @@ export default async function ClientDashboardPage({
         />
       </section>
 
-      {/* Liste des demandes */}
       <section className="animate-fade-up">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
           <h2 className="text-xl font-bold text-primary-900">Mes demandes</h2>
@@ -100,7 +142,9 @@ export default async function ClientDashboardPage({
         {requests.length === 0 ? (
           <div className="rounded-[var(--radius-card)] border border-dashed border-neutral-300 bg-white p-12 text-center">
             <p className="text-neutral-500">
-              Aucune demande dans cette catégorie.
+              {status === "all"
+                ? "Vous n'avez pas encore de demande."
+                : "Aucune demande dans cette catégorie."}
             </p>
             <Link
               href="/client/nouvelle-demande"

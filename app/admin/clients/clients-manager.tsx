@@ -1,52 +1,51 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import type { Client } from "@/lib/demo-data";
+import { createClientAction, toggleClientActiveAction } from "./actions";
 
 type Props = { initial: Client[] };
 
 export function ClientsManager({ initial }: Props) {
+  const router = useRouter();
   const [rows, setRows] = useState<Client[]>(initial);
   const [showAdd, setShowAdd] = useState(false);
+  const [pending, startTransition] = useTransition();
 
-  const [companyName, setCompanyName] = useState("");
-  const [siret, setSiret] = useState("");
-  const [primaryContact, setPrimaryContact] = useState("");
-  const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
-  const [saving, setSaving] = useState(false);
+  // Synchronise avec les donnees serveur apres chaque revalidation.
+  useEffect(() => {
+    setRows(initial);
+  }, [initial]);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    setSaving(true);
-    await new Promise((r) => setTimeout(r, 400));
-    const newClient: Client = {
-      id: `CLI-${Date.now().toString().slice(-4)}`,
-      companyName,
-      siret: siret || undefined,
-      primaryContact,
-      email,
-      phone,
-      active: true,
-      createdAt: new Date().toISOString(),
-    };
-    setRows((prev) => [newClient, ...prev]);
-    setCompanyName("");
-    setSiret("");
-    setPrimaryContact("");
-    setEmail("");
-    setPhone("");
-    setSaving(false);
-    setShowAdd(false);
-    alert(
-      `Compte créé pour ${newClient.companyName}.\n\nUn email d'invitation avec les identifiants sera envoyé à ${newClient.email} (à brancher à la prochaine étape).`,
-    );
+    const formData = new FormData(e.currentTarget);
+    startTransition(async () => {
+      const res = await createClientAction(formData);
+      if (!res.ok) {
+        alert(`Erreur : ${res.error}`);
+        return;
+      }
+      alert(res.message);
+      setShowAdd(false);
+      (e.target as HTMLFormElement).reset();
+      router.refresh();
+    });
   }
 
   function toggleActive(id: string) {
-    setRows((prev) =>
-      prev.map((c) => (c.id === id ? { ...c, active: !c.active } : c)),
-    );
+    startTransition(async () => {
+      const res = await toggleClientActiveAction(id);
+      if (!res.ok) {
+        alert(`Erreur : ${res.error}`);
+        return;
+      }
+      setRows((prev) =>
+        prev.map((c) => (c.id === id ? { ...c, active: !c.active } : c)),
+      );
+      router.refresh();
+    });
   }
 
   return (
@@ -80,46 +79,41 @@ export function ClientsManager({ initial }: Props) {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <Field label="Nom de l'entreprise" required>
               <input
+                name="companyName"
                 required
-                value={companyName}
-                onChange={(e) => setCompanyName(e.target.value)}
                 placeholder="Acme BTP"
                 className={inputClass}
               />
             </Field>
             <Field label="SIRET">
               <input
-                value={siret}
-                onChange={(e) => setSiret(e.target.value)}
+                name="siret"
                 placeholder="123 456 789 00012"
                 className={inputClass}
               />
             </Field>
             <Field label="Contact principal" required>
               <input
+                name="primaryContactName"
                 required
-                value={primaryContact}
-                onChange={(e) => setPrimaryContact(e.target.value)}
                 placeholder="Jean Martin"
                 className={inputClass}
               />
             </Field>
             <Field label="Email" required>
               <input
+                name="email"
                 required
                 type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
                 placeholder="j.martin@acme-btp.fr"
                 className={inputClass}
               />
             </Field>
             <Field label="Téléphone" required>
               <input
+                name="phone"
                 required
                 type="tel"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
                 placeholder="06 12 34 56 78"
                 className={inputClass}
               />
@@ -135,10 +129,10 @@ export function ClientsManager({ initial }: Props) {
             </button>
             <button
               type="submit"
-              disabled={saving}
+              disabled={pending}
               className="rounded-[var(--radius-button)] bg-primary-600 px-5 py-2 text-sm font-bold text-white shadow-md hover:bg-primary-700 disabled:opacity-50 transition-all"
             >
-              {saving ? "Création…" : "Créer et envoyer les identifiants"}
+              {pending ? "Création…" : "Créer le compte"}
             </button>
           </div>
         </form>
@@ -147,7 +141,8 @@ export function ClientsManager({ initial }: Props) {
       <section className="rounded-[var(--radius-card)] bg-white ring-1 ring-neutral-200 shadow-sm overflow-hidden animate-fade-up">
         {rows.length === 0 ? (
           <div className="p-12 text-center text-neutral-500">
-            Aucun client pour l&apos;instant.
+            Aucun client pour l&apos;instant — cliquez sur « Créer un compte
+            client » pour commencer.
           </div>
         ) : (
           <ul className="divide-y divide-neutral-100">
@@ -198,8 +193,9 @@ export function ClientsManager({ initial }: Props) {
                   </span>
                   <button
                     type="button"
+                    disabled={pending}
                     onClick={() => toggleActive(c.id)}
-                    className={`rounded-full px-3 py-1.5 text-xs font-semibold transition ${
+                    className={`rounded-full px-3 py-1.5 text-xs font-semibold transition disabled:opacity-50 ${
                       c.active
                         ? "bg-white ring-1 ring-rose-200 text-rose-600 hover:bg-rose-50"
                         : "bg-primary-600 text-white hover:bg-primary-700"

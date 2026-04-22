@@ -1,7 +1,25 @@
-import { DEMO_CANDIDATE_BASE } from "@/lib/demo-data";
+import { createClient } from "@/lib/supabase/server";
 import { CandidatesManager } from "./candidates-manager";
 
-export default function AdminCandidatesPage() {
+export const dynamic = "force-dynamic";
+
+export default async function AdminCandidatesPage() {
+  const supabase = await createClient();
+  const { data: candidates } = await supabase
+    .from("candidates")
+    .select("id, first_name, last_name, headline, experience_years, cv_file_name, added_at")
+    .order("added_at", { ascending: false });
+
+  const rows = (candidates ?? []).map((c) => ({
+    id: c.id,
+    firstName: c.first_name,
+    lastName: c.last_name,
+    headline: c.headline ?? "",
+    experienceYears: c.experience_years ?? 0,
+    cvFileName: c.cv_file_name ?? "",
+    addedAt: c.added_at,
+  }));
+
   return (
     <div className="mx-auto max-w-5xl px-4 sm:px-6 py-8 sm:py-12">
       <header className="mb-8 animate-fade-up">
@@ -17,7 +35,7 @@ export default function AdminCandidatesPage() {
         </p>
       </header>
 
-      <CandidatesManager initial={DEMO_CANDIDATE_BASE} />
+      <CandidatesManager initial={rows} />
     </div>
   );
 }

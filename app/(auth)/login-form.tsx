@@ -2,22 +2,66 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { createClient } from "@/lib/supabase/client";
 
 export function LoginForm() {
   const router = useRouter();
+  const supabase = createClient();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setLoading(true);
-    // L'authentification réelle sera branchée à l'étape suivante.
-    // Pour l'instant on route selon l'email : admin ou client (démo).
-    await new Promise((resolve) => setTimeout(resolve, 400));
-    const isAdmin = /audrey|admin|forma/i.test(email);
-    router.push(isAdmin ? "/admin" : "/client");
+    setError(null);
+
+    const { data, error: signInError } = await supabase.auth.signInWithPassword(
+      { email, password },
+    );
+
+    if (signInError || !data.user) {
+      setLoading(false);
+      setError(
+        signInError?.message === "Invalid login credentials"
+          ? "Email ou mot de passe incorrect."
+          : signInError?.message ?? "Erreur de connexion.",
+      );
+      return;
+    }
+
+    // Récupérer le rôle pour savoir où rediriger.
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", data.user.id)
+      .single();
+
+    router.push(profile?.role === "admin" ? "/admin" : "/client");
+    router.refresh();
+  }
+
+  async function handlePasswordReset() {
+    if (!email) {
+      setError("Saisissez votre email puis cliquez de nouveau sur « Oublié ? ».");
+      return;
+    }
+    setLoading(true);
+    setError(null);
+    const { error: resetError } = await supabase.auth.resetPasswordForEmail(
+      email,
+      { redirectTo: `${window.location.origin}/reset-password` },
+    );
+    setLoading(false);
+    if (resetError) {
+      setError(resetError.message);
+    } else {
+      alert(
+        `Un email de réinitialisation a été envoyé à ${email}.\nVérifiez votre boîte de réception.`,
+      );
+    }
   }
 
   return (
@@ -44,7 +88,7 @@ export function LoginForm() {
           <button
             type="button"
             className="text-xs font-medium text-primary-600 hover:text-accent-500 transition-colors"
-            onClick={() => alert("Fonction à venir : réinitialisation du mot de passe.")}
+            onClick={handlePasswordReset}
           >
             Oublié ?
           </button>
@@ -75,6 +119,23 @@ export function LoginForm() {
           </button>
         </div>
       </div>
+
+      {error && (
+        <div className="rounded-[var(--radius-button)] bg-rose-50 border border-rose-200 px-3 py-2 text-sm text-rose-700 flex items-start gap-2">
+          <svg
+            className="h-4 w-4 mt-0.5 shrink-0"
+            viewBox="0 0 20 20"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            aria-hidden="true"
+          >
+            <circle cx="10" cy="10" r="7" />
+            <path d="M10 6v4m0 3v.01" strokeLinecap="round" />
+          </svg>
+          <span>{error}</span>
+        </div>
+      )}
 
       <label className="flex items-center gap-2 text-sm text-neutral-600 select-none">
         <input

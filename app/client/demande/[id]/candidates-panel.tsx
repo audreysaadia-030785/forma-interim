@@ -1,25 +1,41 @@
 "use client";
 
-import { useState } from "react";
-import type {
-  Candidate,
-  CandidateStatus,
-  RequestStatus,
-} from "@/lib/demo-data";
+import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
+import type { RequestStatus } from "@/lib/demo-data";
+import { decideProposalAction } from "./actions";
 
-type Props = {
-  status: RequestStatus;
-  candidates: Candidate[];
+type ProposalRow = {
+  proposalId: string;
+  status: "pending" | "validated" | "refused";
+  fullName: string;
+  headline: string;
 };
 
-export function CandidatesPanel({ status, candidates }: Props) {
-  // État local : on simule validation/refus en mémoire pour l'UX.
-  const [rows, setRows] = useState<Candidate[]>(candidates);
+type Props = {
+  requestStatus: RequestStatus;
+  proposals: ProposalRow[];
+};
 
-  function setStatus(id: string, newStatus: CandidateStatus) {
-    setRows((prev) =>
-      prev.map((c) => (c.id === id ? { ...c, status: newStatus } : c)),
-    );
+export function CandidatesPanel({ requestStatus, proposals }: Props) {
+  const router = useRouter();
+  const [rows, setRows] = useState<ProposalRow[]>(proposals);
+  const [pending, startTransition] = useTransition();
+
+  function decide(proposalId: string, decision: "validated" | "refused") {
+    startTransition(async () => {
+      const res = await decideProposalAction(proposalId, decision);
+      if (!res.ok) {
+        alert(`Erreur : ${res.error}`);
+        return;
+      }
+      setRows((prev) =>
+        prev.map((p) =>
+          p.proposalId === proposalId ? { ...p, status: decision } : p,
+        ),
+      );
+      router.refresh();
+    });
   }
 
   return (
@@ -29,29 +45,30 @@ export function CandidatesPanel({ status, candidates }: Props) {
           Candidats proposés
         </h2>
         <p className="mt-1 text-sm text-neutral-600">
-          {status === "pending"
+          {requestStatus === "pending"
             ? "Nous recherchons les meilleurs profils pour votre mission."
-            : status === "proposed"
-              ? "Validez ou refusez chaque profil — vous pouvez télécharger leur CV."
-              : status === "validated"
+            : requestStatus === "proposed"
+              ? "Validez ou refusez chaque profil — vous pouvez consulter leur CV."
+              : requestStatus === "validated"
                 ? "Profil(s) validé(s) pour cette mission."
-                : status === "refused"
+                : requestStatus === "refused"
                   ? "Aucun profil n'a été retenu."
                   : "Demande annulée."}
         </p>
       </header>
 
       {rows.length === 0 ? (
-        <EmptyState status={status} />
+        <EmptyState status={requestStatus} />
       ) : (
         <ul className="space-y-3">
-          {rows.map((candidate, i) => (
+          {rows.map((p, i) => (
             <CandidateRow
-              key={candidate.id}
-              candidate={candidate}
+              key={p.proposalId}
+              row={p}
               index={i}
-              onValidate={() => setStatus(candidate.id, "validated")}
-              onRefuse={() => setStatus(candidate.id, "refused")}
+              disabled={pending}
+              onValidate={() => decide(p.proposalId, "validated")}
+              onRefuse={() => decide(p.proposalId, "refused")}
             />
           ))}
         </ul>
@@ -61,17 +78,19 @@ export function CandidatesPanel({ status, candidates }: Props) {
 }
 
 function CandidateRow({
-  candidate,
+  row,
   index,
+  disabled,
   onValidate,
   onRefuse,
 }: {
-  candidate: Candidate;
+  row: ProposalRow;
   index: number;
+  disabled: boolean;
   onValidate: () => void;
   onRefuse: () => void;
 }) {
-  const initials = candidate.fullName
+  const initials = row.fullName
     .split(" ")
     .map((p) => p[0])
     .join("")
@@ -94,7 +113,7 @@ function CandidateRow({
       label: "Refusé",
       badge: "bg-rose-100 text-rose-700 ring-rose-200",
     },
-  }[candidate.status];
+  }[row.status];
 
   return (
     <li
@@ -109,7 +128,7 @@ function CandidateRow({
         <div className="flex-1 min-w-0">
           <div className="flex flex-wrap items-center gap-2 mb-1">
             <h3 className="text-base font-bold text-primary-900">
-              {candidate.fullName}
+              {row.fullName}
             </h3>
             <span
               className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ring-1 ring-inset ${statusMeta.badge}`}
@@ -117,71 +136,39 @@ function CandidateRow({
               {statusMeta.label}
             </span>
           </div>
-          <p className="text-sm text-neutral-600">{candidate.headline}</p>
+          <p className="text-sm text-neutral-600">{row.headline}</p>
         </div>
       </div>
 
-      <div className="mt-4 flex flex-col sm:flex-row gap-2 sm:items-center sm:justify-between border-t border-neutral-200/70 pt-3">
-        <a
-          href={candidate.cvUrl}
-          onClick={(e) => {
-            e.preventDefault();
-            alert(
-              "Téléchargement du CV — sera branché à la base de données à la prochaine étape.",
-            );
-          }}
-          className="inline-flex items-center gap-2 text-sm font-semibold text-primary-600 hover:text-accent-500 transition"
-        >
-          <svg
-            className="h-4 w-4"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.8"
-            aria-hidden="true"
+      {row.status === "pending" && (
+        <div className="mt-4 flex flex-col sm:flex-row gap-2 sm:justify-end border-t border-neutral-200/70 pt-3">
+          <button
+            type="button"
+            disabled={disabled}
+            onClick={onRefuse}
+            className="inline-flex items-center gap-1.5 rounded-[var(--radius-button)] bg-white px-4 py-2 text-sm font-semibold text-rose-600 ring-1 ring-rose-200 hover:bg-rose-50 transition disabled:opacity-50"
           >
-            <path
-              d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"
-              strokeLinejoin="round"
-            />
-            <path d="M14 2v6h6" strokeLinejoin="round" />
-          </svg>
-          Télécharger le CV
-        </a>
-
-        {candidate.status === "pending" && (
-          <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={onRefuse}
-              className="inline-flex items-center gap-1.5 rounded-[var(--radius-button)] bg-white px-4 py-2 text-sm font-semibold text-rose-600 ring-1 ring-rose-200 hover:bg-rose-50 transition"
-            >
-              Refuser
-            </button>
-            <button
-              type="button"
-              onClick={onValidate}
-              className="inline-flex items-center gap-1.5 rounded-[var(--radius-button)] bg-emerald-600 px-4 py-2 text-sm font-bold text-white shadow-md shadow-emerald-600/20 hover:bg-emerald-700 transition"
-            >
-              <svg
-                className="h-4 w-4"
-                viewBox="0 0 20 20"
-                fill="none"
-                aria-hidden="true"
-              >
-                <path
-                  d="M4 10.5 8.5 15 16 7"
-                  stroke="currentColor"
-                  strokeWidth="2.4"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-              Valider
-            </button>
-          </div>
-        )}
-      </div>
+            Refuser
+          </button>
+          <button
+            type="button"
+            disabled={disabled}
+            onClick={onValidate}
+            className="inline-flex items-center gap-1.5 rounded-[var(--radius-button)] bg-emerald-600 px-4 py-2 text-sm font-bold text-white shadow-md shadow-emerald-600/20 hover:bg-emerald-700 transition disabled:opacity-50"
+          >
+            <svg className="h-4 w-4" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+              <path
+                d="M4 10.5 8.5 15 16 7"
+                stroke="currentColor"
+                strokeWidth="2.4"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+            Valider
+          </button>
+        </div>
+      )}
     </li>
   );
 }

@@ -1,21 +1,27 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import type { CandidateRecord } from "@/lib/demo-data";
+import {
+  createCandidateAction,
+  deleteCandidateAction,
+  getCandidateCvUrlAction,
+} from "./actions";
 
 type Props = { initial: CandidateRecord[] };
 
 export function CandidatesManager({ initial }: Props) {
+  const router = useRouter();
   const [rows, setRows] = useState<CandidateRecord[]>(initial);
   const [query, setQuery] = useState("");
   const [showAdd, setShowAdd] = useState(false);
+  const [pending, startTransition] = useTransition();
 
-  // Formulaire d'ajout
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
-  const [headline, setHeadline] = useState("");
-  const [cvFile, setCvFile] = useState<File | null>(null);
-  const [saving, setSaving] = useState(false);
+  // Synchronise avec les donnees serveur quand la page revalide (apres insert/delete).
+  useEffect(() => {
+    setRows(initial);
+  }, [initial]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -27,40 +33,48 @@ export function CandidatesManager({ initial }: Props) {
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    if (!firstName || !lastName || !cvFile) return;
-    setSaving(true);
-    await new Promise((r) => setTimeout(r, 400));
-    const newCandidate: CandidateRecord = {
-      id: `CND-${Date.now().toString().slice(-4)}`,
-      firstName,
-      lastName,
-      headline: headline || "Profil à préciser",
-      experienceYears: 0,
-      cvFileName: cvFile.name,
-      addedAt: new Date().toISOString(),
-    };
-    setRows((prev) => [newCandidate, ...prev]);
-    setFirstName("");
-    setLastName("");
-    setHeadline("");
-    setCvFile(null);
-    setSaving(false);
-    setShowAdd(false);
+    const formData = new FormData(e.currentTarget);
+    startTransition(async () => {
+      const res = await createCandidateAction(formData);
+      if (!res.ok) {
+        alert(`Erreur : ${res.error}`);
+        return;
+      }
+      (e.target as HTMLFormElement).reset();
+      setShowAdd(false);
+      router.refresh();
+    });
   }
 
   function handleDelete(id: string, name: string) {
     if (
-      confirm(
+      !confirm(
         `Supprimer définitivement le CV de ${name} ?\n\nCette action est irréversible et conforme RGPD.`,
       )
-    ) {
+    )
+      return;
+    startTransition(async () => {
+      const res = await deleteCandidateAction(id);
+      if (!res.ok) {
+        alert(`Erreur : ${res.error}`);
+        return;
+      }
       setRows((prev) => prev.filter((c) => c.id !== id));
+      router.refresh();
+    });
+  }
+
+  async function handleViewCv(id: string) {
+    const res = await getCandidateCvUrlAction(id);
+    if (!res.ok || !res.url) {
+      alert(`Erreur : ${res.error ?? "CV introuvable"}`);
+      return;
     }
+    window.open(res.url, "_blank");
   }
 
   return (
     <div className="space-y-6">
-      {/* Barre d'actions */}
       <section className="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between animate-fade-up">
         <div className="relative flex-1 max-w-md">
           <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400">
@@ -101,7 +115,6 @@ export function CandidatesManager({ initial }: Props) {
         </button>
       </section>
 
-      {/* Formulaire d'ajout */}
       {showAdd && (
         <form
           onSubmit={handleSubmit}
@@ -112,25 +125,14 @@ export function CandidatesManager({ initial }: Props) {
           </h3>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <Field label="Prénom" required>
-              <input
-                required
-                value={firstName}
-                onChange={(e) => setFirstName(e.target.value)}
-                className={inputClass}
-              />
+              <input name="firstName" required className={inputClass} />
             </Field>
             <Field label="Nom" required>
-              <input
-                required
-                value={lastName}
-                onChange={(e) => setLastName(e.target.value)}
-                className={inputClass}
-              />
+              <input name="lastName" required className={inputClass} />
             </Field>
             <Field label="Descriptif court">
               <input
-                value={headline}
-                onChange={(e) => setHeadline(e.target.value)}
+                name="headline"
                 placeholder="Ex. Plombier — 8 ans"
                 className={inputClass}
               />
@@ -151,15 +153,24 @@ export function CandidatesManager({ initial }: Props) {
                       strokeLinejoin="round"
                     />
                   </svg>
-                  <span className="text-sm font-semibold text-primary-700">
-                    {cvFile ? cvFile.name : "Cliquez pour choisir un fichier PDF"}
+                  <span
+                    id="cv-filename"
+                    className="text-sm font-semibold text-primary-700"
+                  >
+                    Cliquez pour choisir un fichier PDF
                   </span>
                   <input
+                    name="cv"
                     type="file"
                     accept=".pdf"
                     required
                     className="sr-only"
-                    onChange={(e) => setCvFile(e.target.files?.[0] ?? null)}
+                    onChange={(e) => {
+                      const span = document.getElementById("cv-filename");
+                      if (span && e.target.files?.[0]) {
+                        span.textContent = e.target.files[0].name;
+                      }
+                    }}
                   />
                 </label>
               </Field>
@@ -176,16 +187,15 @@ export function CandidatesManager({ initial }: Props) {
             </button>
             <button
               type="submit"
-              disabled={saving}
+              disabled={pending}
               className="rounded-[var(--radius-button)] bg-primary-600 px-5 py-2 text-sm font-bold text-white shadow-md hover:bg-primary-700 disabled:opacity-50 transition-all"
             >
-              {saving ? "Enregistrement…" : "Enregistrer"}
+              {pending ? "Enregistrement…" : "Enregistrer"}
             </button>
           </div>
         </form>
       )}
 
-      {/* Liste */}
       <section className="rounded-[var(--radius-card)] bg-white ring-1 ring-neutral-200 shadow-sm overflow-hidden animate-fade-up">
         {filtered.length === 0 ? (
           <div className="p-12 text-center text-neutral-500">
@@ -215,21 +225,18 @@ export function CandidatesManager({ initial }: Props) {
                 </div>
                 <button
                   type="button"
-                  onClick={() =>
-                    alert(
-                      `Ouverture du CV : ${c.cvFileName}\n(sera branché à la base de données)`,
-                    )
-                  }
+                  onClick={() => handleViewCv(c.id)}
                   className="hidden sm:inline-flex items-center gap-1 rounded-full bg-white ring-1 ring-neutral-200 px-3 py-1.5 text-xs font-semibold text-primary-700 hover:bg-primary-50 hover:ring-primary-300 transition"
                 >
                   Voir CV
                 </button>
                 <button
                   type="button"
+                  disabled={pending}
                   onClick={() =>
                     handleDelete(c.id, `${c.firstName} ${c.lastName}`)
                   }
-                  className="inline-flex items-center gap-1 rounded-full bg-white ring-1 ring-rose-200 px-3 py-1.5 text-xs font-semibold text-rose-600 hover:bg-rose-50 transition"
+                  className="inline-flex items-center gap-1 rounded-full bg-white ring-1 ring-rose-200 px-3 py-1.5 text-xs font-semibold text-rose-600 hover:bg-rose-50 transition disabled:opacity-50"
                 >
                   <svg
                     className="h-3.5 w-3.5"
