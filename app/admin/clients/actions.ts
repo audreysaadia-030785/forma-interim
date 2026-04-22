@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient as createServerClient, createServiceClient } from "@/lib/supabase/server";
+import { sendClientWelcomeEmail } from "@/lib/email";
 
 export async function createClientAction(formData: FormData) {
   const supabase = await createServerClient();
@@ -60,6 +61,18 @@ export async function createClientAction(formData: FormData) {
     // Rollback du compte auth si la création du client échoue.
     await admin.auth.admin.deleteUser(created.user.id);
     return { ok: false, error: clientError.message };
+  }
+
+  // Envoi de l'email de bienvenue (best-effort — on n'échoue pas si l'email part mal).
+  try {
+    await sendClientWelcomeEmail({
+      to: email,
+      companyName,
+      primaryContactName,
+      password: tempPassword,
+    });
+  } catch (e) {
+    console.error("[createClient] welcome email failed:", e);
   }
 
   revalidatePath("/admin/clients");

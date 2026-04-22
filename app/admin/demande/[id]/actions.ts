@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient as createServerClient, createServiceClient } from "@/lib/supabase/server";
+import { sendCandidatesProposedEmail } from "@/lib/email";
 
 async function requireAdmin() {
   const supabase = await createServerClient();
@@ -67,6 +68,37 @@ export async function proposeCandidatesAction(
     .from("requests")
     .update({ status: totalProposals > 0 ? "proposed" : "pending" })
     .eq("id", requestId);
+
+  // Email au client — seulement si on ajoute au moins un nouveau profil.
+  if (toAdd.length > 0 && totalProposals > 0) {
+    const { data: request } = await admin
+      .from("requests")
+      .select("reference, job_label, contact_email, clients(primary_user_id)")
+      .eq("id", requestId)
+      .single();
+
+    let clientEmail = request?.contact_email ?? null;
+    // @ts-expect-error relation
+    const primaryUserId = request?.clients?.primary_user_id;
+    if (primaryUserId) {
+      const { data: userRow } = await admin.auth.admin.getUserById(primaryUserId);
+      if (userRow?.user?.email) clientEmail = userRow.user.email;
+    }
+
+    if (clientEmail) {
+      try {
+        await sendCandidatesProposedEmail({
+          to: clientEmail,
+          requestId,
+          reference: request?.reference ?? "",
+          jobLabel: request?.job_label ?? "",
+          candidatesCount: totalProposals,
+        });
+      } catch (e) {
+        console.error("[propose] client notification failed:", e);
+      }
+    }
+  }
 
   revalidatePath(`/admin/demande/${requestId}`);
   revalidatePath("/admin");

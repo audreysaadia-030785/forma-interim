@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient as createServerClient, createServiceClient } from "@/lib/supabase/server";
+import { sendNewRequestAdminEmail } from "@/lib/email";
 
 export async function submitRequestAction(formData: FormData) {
   const supabase = await createServerClient();
@@ -70,8 +71,15 @@ export async function submitRequestAction(formData: FormData) {
     jobSpecPath = path;
   }
 
+  // Retrouver le nom de l'entreprise pour l'email.
+  const { data: fullClient } = await admin
+    .from("clients")
+    .select("company_name")
+    .eq("id", clientRow.id)
+    .single();
+
   // Insert de la demande. La reference est générée automatiquement par trigger.
-  const { error: insertError } = await admin
+  const { error: insertError, data: insertedRow } = await admin
     .from("requests")
     .insert({
       client_id: clientRow.id,
@@ -96,7 +104,7 @@ export async function submitRequestAction(formData: FormData) {
       contact_phone: contactPhone,
       job_spec_path: jobSpecPath,
     })
-    .select("reference")
+    .select("id, reference")
     .single();
 
   if (insertError) {
@@ -104,6 +112,21 @@ export async function submitRequestAction(formData: FormData) {
       await admin.storage.from("job-specs").remove([jobSpecPath]);
     }
     return { ok: false, error: insertError.message };
+  }
+
+  // Email à l'admin — best-effort.
+  try {
+    await sendNewRequestAdminEmail({
+      requestId: insertedRow.id,
+      reference: insertedRow.reference,
+      clientCompanyName: fullClient?.company_name ?? "Client",
+      jobLabel,
+      headcount,
+      startDate,
+      location,
+    });
+  } catch (e) {
+    console.error("[submitRequest] admin notification failed:", e);
   }
 
   revalidatePath("/client");

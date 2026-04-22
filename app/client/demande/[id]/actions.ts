@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient as createServerClient, createServiceClient } from "@/lib/supabase/server";
+import { sendProposalDecisionEmail } from "@/lib/email";
 
 export async function decideProposalAction(
   proposalId: string,
@@ -41,6 +42,39 @@ export async function decideProposalAction(
 
   if (newStatus) {
     await admin.from("requests").update({ status: newStatus }).eq("id", updated.request_id);
+  }
+
+  // Email à l'admin pour cette décision.
+  try {
+    const { data: context } = await admin
+      .from("proposals")
+      .select(
+        `candidates(first_name, last_name),
+         requests(reference, job_label, clients(company_name))`,
+      )
+      .eq("id", proposalId)
+      .single();
+
+    const ctx = context as unknown as {
+      candidates?: { first_name?: string; last_name?: string };
+      requests?: {
+        reference?: string;
+        job_label?: string;
+        clients?: { company_name?: string };
+      };
+    };
+    const candidateName = `${ctx?.candidates?.first_name ?? ""} ${ctx?.candidates?.last_name ?? ""}`.trim();
+    const req = ctx?.requests;
+    await sendProposalDecisionEmail({
+      requestId: updated.request_id,
+      reference: req?.reference ?? "",
+      clientCompanyName: req?.clients?.company_name ?? "Client",
+      jobLabel: req?.job_label ?? "",
+      candidateName,
+      decision,
+    });
+  } catch (e) {
+    console.error("[decideProposal] admin notification failed:", e);
   }
 
   revalidatePath(`/client/demande/${updated.request_id}`);
