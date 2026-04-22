@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { STATUS_META, formatDate, type RequestStatus } from "@/lib/demo-data";
+import { rankCandidates, type MatchInputCandidate } from "@/lib/matching";
 import { ProposeCandidatesPanel } from "./propose-candidates-panel";
 
 export const dynamic = "force-dynamic";
@@ -30,19 +31,83 @@ export default async function AdminRequestDetail({
 
   const meta = STATUS_META[request.status as RequestStatus];
 
-  // Candidats déjà proposés sur cette demande.
   const { data: proposals } = await supabase
     .from("proposals")
-    .select("id, status, candidate_id, candidates(id, first_name, last_name, headline, cv_file_name)")
+    .select("id, status, candidate_id")
     .eq("request_id", id);
 
   const alreadyProposedIds = (proposals ?? []).map((p) => p.candidate_id);
 
-  // Base candidats.
+  // Charge la base candidats complète pour faire le scoring.
   const { data: candidateBase } = await supabase
     .from("candidates")
-    .select("id, first_name, last_name, headline, cv_file_name")
+    .select(
+      `id, first_name, last_name, headline, cv_file_name,
+       primary_rome_code, primary_rome_label, secondary_rome_codes,
+       habilitations, permis, experience_years,
+       location, available_from,
+       expected_hourly_rate_min_eur, expected_hourly_rate_max_eur,
+       tags, rating`,
+    )
     .order("added_at", { ascending: false });
+
+  // Calcule les scores.
+  const matchingInputs: MatchInputCandidate[] = (candidateBase ?? []).map(
+    (c) => ({
+      id: c.id,
+      primaryRomeCode: c.primary_rome_code,
+      secondaryRomeCodes: c.secondary_rome_codes ?? [],
+      habilitations: c.habilitations ?? [],
+      experienceYears: c.experience_years,
+      location: c.location,
+      availableFrom: c.available_from,
+      expectedHourlyRateMinEur: c.expected_hourly_rate_min_eur
+        ? Number(c.expected_hourly_rate_min_eur)
+        : null,
+      expectedHourlyRateMaxEur: c.expected_hourly_rate_max_eur
+        ? Number(c.expected_hourly_rate_max_eur)
+        : null,
+    }),
+  );
+
+  const allRequiredHabilitations = [
+    ...(request.habilitations ?? []),
+    ...(request.custom_habilitations ?? []),
+  ];
+
+  const matches = rankCandidates(
+    {
+      romeCode: request.rome_code,
+      habilitations: allRequiredHabilitations,
+      location: request.location,
+      startDate: request.start_date,
+      hourlyRateEur: Number(request.hourly_rate_eur),
+    },
+    matchingInputs,
+  );
+
+  // Fusionne les infos candidat + score pour le panel.
+  const candidatesWithScore = matches.map((m) => {
+    const candidate = (candidateBase ?? []).find((c) => c.id === m.candidateId)!;
+    return {
+      id: candidate.id,
+      firstName: candidate.first_name,
+      lastName: candidate.last_name,
+      headline: candidate.headline ?? "",
+      cvFileName: candidate.cv_file_name ?? "",
+      primaryRomeCode: candidate.primary_rome_code,
+      primaryRomeLabel: candidate.primary_rome_label,
+      experienceYears: candidate.experience_years,
+      habilitations: candidate.habilitations ?? [],
+      location: candidate.location,
+      availableFrom: candidate.available_from,
+      rating: candidate.rating,
+      tags: candidate.tags ?? [],
+      score: m.score,
+      breakdown: m.breakdown,
+      reasons: m.reasons,
+    };
+  });
 
   return (
     <div className="mx-auto max-w-6xl px-4 sm:px-6 py-8 sm:py-12">
@@ -53,7 +118,7 @@ export default async function AdminRequestDetail({
         <span>/</span>
         <span className="text-primary-700 font-semibold truncate">
           {
-            // @ts-expect-error relation typed as object here since single()
+            // @ts-expect-error relation
             request.clients?.company_name
           }{" "}
           — {request.job_label}
@@ -106,35 +171,10 @@ export default async function AdminRequestDetail({
       <div className="grid lg:grid-cols-[1fr_1.6fr] gap-6">
         <aside className="space-y-4">
           <InfoCard title="Rémunération proposée">
-            <Row
-              label="Taux horaire"
-              value={`${Number(request.hourly_rate_eur).toFixed(2)} € brut/h`}
-              highlight
-            />
-            <Row
-              label="Prime repas"
-              value={
-                request.meal_bonus_eur
-                  ? `${Number(request.meal_bonus_eur).toFixed(2)} €/jour`
-                  : "—"
-              }
-            />
-            <Row
-              label="Prime trajet"
-              value={
-                request.travel_bonus_eur
-                  ? `${Number(request.travel_bonus_eur).toFixed(2)} €/jour`
-                  : "—"
-              }
-            />
-            <Row
-              label="Indemnité transport"
-              value={
-                request.transport_allowance_eur
-                  ? `${Number(request.transport_allowance_eur).toFixed(2)} €/jour`
-                  : "—"
-              }
-            />
+            <Row label="Taux horaire" value={`${Number(request.hourly_rate_eur).toFixed(2)} € brut/h`} highlight />
+            <Row label="Prime repas" value={request.meal_bonus_eur ? `${Number(request.meal_bonus_eur).toFixed(2)} €/jour` : "—"} />
+            <Row label="Prime trajet" value={request.travel_bonus_eur ? `${Number(request.travel_bonus_eur).toFixed(2)} €/jour` : "—"} />
+            <Row label="Indemnité transport" value={request.transport_allowance_eur ? `${Number(request.transport_allowance_eur).toFixed(2)} €/jour` : "—"} />
             <Row label="Autre" value={request.other_premium ?? "—"} />
           </InfoCard>
 
@@ -151,11 +191,10 @@ export default async function AdminRequestDetail({
             <Row label="Téléphone" value={request.contact_phone} />
           </InfoCard>
 
-          {((request.habilitations?.length ?? 0) > 0 ||
-            (request.custom_habilitations?.length ?? 0) > 0) && (
+          {allRequiredHabilitations.length > 0 && (
             <InfoCard title="Habilitations requises">
               <ul className="flex flex-wrap gap-1.5">
-                {[...(request.habilitations ?? []), ...(request.custom_habilitations ?? [])].map((h: string) => (
+                {allRequiredHabilitations.map((h: string) => (
                   <li
                     key={h}
                     className="inline-flex rounded-full bg-primary-50 ring-1 ring-primary-200 px-2.5 py-1 text-xs font-semibold text-primary-800"
@@ -182,20 +221,6 @@ export default async function AdminRequestDetail({
                 target="_blank"
                 className="inline-flex items-center gap-2 text-sm font-semibold text-primary-600 hover:text-accent-500 transition"
               >
-                <svg
-                  className="h-4 w-4"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.8"
-                  aria-hidden="true"
-                >
-                  <path
-                    d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"
-                    strokeLinejoin="round"
-                  />
-                  <path d="M14 2v6h6" strokeLinejoin="round" />
-                </svg>
                 Télécharger la pièce jointe
               </a>
             </InfoCard>
@@ -205,15 +230,7 @@ export default async function AdminRequestDetail({
         <ProposeCandidatesPanel
           requestId={request.id}
           alreadyProposedIds={alreadyProposedIds}
-          candidateBase={(candidateBase ?? []).map((c) => ({
-            id: c.id,
-            firstName: c.first_name,
-            lastName: c.last_name,
-            headline: c.headline ?? "",
-            experienceYears: 0,
-            cvFileName: c.cv_file_name ?? "",
-            addedAt: "",
-          }))}
+          candidates={candidatesWithScore}
         />
       </div>
     </div>
