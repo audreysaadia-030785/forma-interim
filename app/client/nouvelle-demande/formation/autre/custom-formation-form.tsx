@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
+import { DatePicker } from "@/app/components/date-picker";
 import { submitFormationRequestAction } from "../actions";
 
 const FINANCING_OPTIONS = [
@@ -182,12 +183,11 @@ export function CustomFormationForm() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           <FieldGroup>
             <Label htmlFor="startDate">Date souhaitée <span className="text-neutral-500 font-normal">(indicative)</span></Label>
-            <input
+            <DatePicker
               id="startDate"
-              type="date"
               value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
-              className={inputClass}
+              onChange={setStartDate}
+              placeholder="Choisir une date"
             />
           </FieldGroup>
           <FieldGroup>

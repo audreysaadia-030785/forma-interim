@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useMemo, useState, useTransition } from "react";
 import { RomeCombobox } from "@/app/components/rome-combobox";
+import { DatePicker } from "@/app/components/date-picker";
 import { suggestHabilitations } from "@/lib/habilitations";
 import { generateJobDescriptionAction, submitRecruitmentRequestAction } from "./actions";
 
@@ -407,7 +408,7 @@ export function RecruitmentForm() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           <FieldGroup>
             <Label htmlFor="startDate" required>Date de prise de poste souhaitée</Label>
-            <input id="startDate" type="date" required value={startDate} onChange={(e) => setStartDate(e.target.value)} className={inputClass} />
+            <DatePicker id="startDate" required value={startDate} onChange={setStartDate} placeholder="Choisir une date" />
           </FieldGroup>
 
           <FieldGroup>

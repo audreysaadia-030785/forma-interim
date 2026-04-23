@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
+import { DatePicker } from "@/app/components/date-picker";
 import { submitFormationRequestAction } from "../actions";
 
 type Format = "presentiel" | "distanciel" | "hybride";
@@ -257,12 +258,11 @@ export function FormationRequestForm({
                 (indicative — nous ajustons ensemble)
               </span>
             </Label>
-            <input
+            <DatePicker
               id="startDate"
-              type="date"
               value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
-              className={inputClass}
+              onChange={setStartDate}
+              placeholder="Choisir une date"
             />
           </FieldGroup>
 
