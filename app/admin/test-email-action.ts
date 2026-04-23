@@ -2,11 +2,25 @@
 
 import { Resend } from "resend";
 
+function cleanEnv(val: string | undefined, fallback: string): string {
+  if (!val) return fallback;
+  let v = val.trim();
+  if ((v.startsWith('"') && v.endsWith('"')) || (v.startsWith("'") && v.endsWith("'"))) {
+    v = v.slice(1, -1).trim();
+  }
+  return v || fallback;
+}
+
 export async function sendTestEmailAction() {
-  const apiKey = process.env.RESEND_API_KEY;
-  const from =
-    process.env.EMAIL_FROM ?? "ASCV CONSEILS <onboarding@resend.dev>";
-  const to = process.env.EMAIL_ADMIN ?? "contact.audreysaadia@gmail.com";
+  const apiKey = process.env.RESEND_API_KEY?.trim();
+  const from = cleanEnv(
+    process.env.EMAIL_FROM,
+    "ASCV CONSEILS <onboarding@resend.dev>",
+  );
+  const to = cleanEnv(
+    process.env.EMAIL_ADMIN,
+    "contact.audreysaadia@gmail.com",
+  );
 
   if (!apiKey) {
     return {

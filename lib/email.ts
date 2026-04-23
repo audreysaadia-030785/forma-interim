@@ -11,10 +11,28 @@ function getResend(): Resend | null {
   return new Resend(key);
 }
 
-const FROM = process.env.EMAIL_FROM ?? "ASCV CONSEILS <onboarding@resend.dev>";
-const ADMIN = process.env.EMAIL_ADMIN ?? "contact.audreysaadia@gmail.com";
-const APP_URL =
-  process.env.NEXT_PUBLIC_APP_URL ?? "https://ascv-conseils.vercel.app";
+// Nettoie une valeur d'env var : retire guillemets, espaces accidentels.
+function cleanEnv(val: string | undefined, fallback: string): string {
+  if (!val) return fallback;
+  let v = val.trim();
+  if ((v.startsWith('"') && v.endsWith('"')) || (v.startsWith("'") && v.endsWith("'"))) {
+    v = v.slice(1, -1).trim();
+  }
+  return v || fallback;
+}
+
+const FROM = cleanEnv(
+  process.env.EMAIL_FROM,
+  "ASCV CONSEILS <onboarding@resend.dev>",
+);
+const ADMIN = cleanEnv(
+  process.env.EMAIL_ADMIN,
+  "contact.audreysaadia@gmail.com",
+);
+const APP_URL = cleanEnv(
+  process.env.NEXT_PUBLIC_APP_URL,
+  "https://ascv-conseils.vercel.app",
+);
 
 async function send(options: {
   to: string | string[];
