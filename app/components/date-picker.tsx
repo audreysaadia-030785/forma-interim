@@ -103,7 +103,7 @@ export function DatePicker({
       )}
 
       {open && (
-        <div className="absolute z-40 mt-1 bg-white rounded-[var(--radius-card)] ring-1 ring-neutral-200 shadow-xl p-3 animate-fade-up">
+        <div className="mt-2 bg-white rounded-[var(--radius-card)] ring-1 ring-neutral-200 shadow-xl p-3 animate-fade-up">
           <DayPicker
             mode="single"
             locale={fr}
