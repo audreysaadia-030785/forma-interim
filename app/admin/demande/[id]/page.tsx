@@ -104,9 +104,9 @@ export default async function AdminRequestDetail({
   ];
 
   // Candidats + matching uniquement pour les demandes de recrutement.
+  type CandidatesData = Awaited<ReturnType<typeof buildCandidatesWithScore>>;
   let alreadyProposedIds: string[] = [];
-  let candidatesWithScore: Awaited<ReturnType<typeof buildCandidatesWithScore>> =
-    [];
+  let candidatesWithScore: CandidatesData["candidatesWithScore"] = [];
   if (isRecruitment) {
     const result = await buildCandidatesWithScore(supabase, request);
     alreadyProposedIds = result.alreadyProposedIds;
