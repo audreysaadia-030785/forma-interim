@@ -13,12 +13,42 @@ const FILTERS: Array<{ key: RequestStatus | "all"; label: string }> = [
   { key: "cancelled", label: "Annulées" },
 ];
 
+const REQUEST_TYPE_ROW_META: Record<
+  string,
+  { label: string; emoji: string; barClass: string; badgeClass: string }
+> = {
+  recrutement: {
+    label: "Recrutement",
+    emoji: "👥",
+    barClass: "bg-primary-500",
+    badgeClass: "bg-primary-50 text-primary-700 ring-primary-200",
+  },
+  formation: {
+    label: "Formation",
+    emoji: "🎓",
+    barClass: "bg-accent-500",
+    badgeClass: "bg-accent-50 text-accent-700 ring-accent-200",
+  },
+  accompagnement_rh: {
+    label: "Accompagnement RH",
+    emoji: "⚖️",
+    barClass: "bg-emerald-500",
+    badgeClass: "bg-emerald-50 text-emerald-700 ring-emerald-200",
+  },
+};
+
+type RequestTypeFilter = "all" | "recrutement" | "formation" | "accompagnement_rh";
+
 export default async function AdminDashboardPage({
   searchParams,
 }: {
-  searchParams: Promise<{ status?: RequestStatus | "all"; client?: string }>;
+  searchParams: Promise<{
+    status?: RequestStatus | "all";
+    client?: string;
+    type?: RequestTypeFilter;
+  }>;
 }) {
-  const { status = "all", client = "all" } = await searchParams;
+  const { status = "all", client = "all", type = "all" } = await searchParams;
   const supabase = await createClient();
 
   // Liste des clients pour le filtre.
@@ -32,13 +62,23 @@ export default async function AdminDashboardPage({
     .from("requests")
     .select(
       `id, reference, client_id, job_label, headcount, start_date, duration_value, duration_unit, location, status, created_at,
-       request_type, contract_type, cdd_duration_months,
+       request_type, contract_type, cdd_duration_months, formation_category,
        clients(company_name)`,
     )
     .order("created_at", { ascending: false });
   if (status !== "all") query = query.eq("status", status);
   if (client !== "all") query = query.eq("client_id", client);
+  if (type !== "all") query = query.eq("request_type", type);
   const { data: requests } = await query;
+
+  // Compteurs par type (pour les pills).
+  const { data: allRequestsForCounts } = await supabase
+    .from("requests")
+    .select("request_type");
+  const countByType = (t: RequestTypeFilter) =>
+    (allRequestsForCounts ?? []).filter((r) =>
+      t === "all" ? true : r.request_type === t,
+    ).length;
 
   // KPIs (sur l'ensemble non filtré).
   const { data: allRequests } = await supabase.from("requests").select("status");
@@ -70,50 +110,71 @@ export default async function AdminDashboardPage({
         <KPI label="Clients actifs" value={activeClients} color="neutral" href="/admin/clients" />
       </section>
 
-      <section className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 animate-fade-up">
-        <div>
-          <h2 className="text-xl font-bold text-primary-900">
-            Demandes{" "}
-            <span className="text-neutral-500 font-medium text-base">
-              ({requests?.length ?? 0})
-            </span>
-          </h2>
+      <section className="mb-6 space-y-4 animate-fade-up">
+        <h2 className="text-xl font-bold text-primary-900">
+          Demandes{" "}
+          <span className="text-neutral-500 font-medium text-base">
+            ({requests?.length ?? 0})
+          </span>
+        </h2>
+
+        {/* FILTRE PRINCIPAL — Type de demande */}
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+          <span className="text-[11px] font-bold uppercase tracking-wider text-primary-700 shrink-0">
+            Type
+          </span>
+          <div className="flex flex-wrap gap-2">
+            {(
+              [
+                { key: "all", label: "Toutes", emoji: "📋" },
+                { key: "recrutement", label: "Recrutement", emoji: "👥" },
+                { key: "formation", label: "Formation", emoji: "🎓" },
+                { key: "accompagnement_rh", label: "Accompagnement RH", emoji: "⚖️" },
+              ] as const
+            ).map((t) => {
+              const active = type === t.key;
+              const params = new URLSearchParams();
+              if (t.key !== "all") params.set("type", t.key);
+              if (status !== "all") params.set("status", status);
+              if (client !== "all") params.set("client", client);
+              const href = `/admin${params.toString() ? `?${params}` : ""}`;
+              const count = countByType(t.key);
+              return (
+                <Link
+                  key={t.key}
+                  href={href}
+                  className={`inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-bold transition-all ${
+                    active
+                      ? "bg-primary-700 text-white shadow-md"
+                      : "bg-white ring-1 ring-neutral-200 text-neutral-700 hover:bg-primary-50 hover:ring-primary-300"
+                  }`}
+                >
+                  <span>{t.emoji}</span>
+                  {t.label}
+                  <span className="opacity-70 text-xs">({count})</span>
+                </Link>
+              );
+            })}
+          </div>
         </div>
 
-        <div className="flex flex-col sm:flex-row gap-2">
-          <form method="get" className="flex gap-2 items-center">
-            <input type="hidden" name="status" value={status} />
-            <select
-              name="client"
-              defaultValue={client}
-              className="rounded-full bg-white ring-1 ring-neutral-200 px-3 py-1.5 text-sm font-semibold text-neutral-700 cursor-pointer focus:ring-primary-500 focus:outline-none"
-            >
-              <option value="all">Tous les clients</option>
-              {(clients ?? []).map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.company_name}
-                </option>
-              ))}
-            </select>
-            <button
-              type="submit"
-              className="rounded-full bg-primary-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-primary-700 transition"
-            >
-              Filtrer
-            </button>
-          </form>
-
+        {/* FILTRES SECONDAIRES — Statut + Client */}
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+          <span className="text-[11px] font-bold uppercase tracking-wider text-neutral-500 shrink-0">
+            Statut
+          </span>
           <div className="flex gap-1 overflow-x-auto rounded-full bg-white ring-1 ring-neutral-200 p-1">
             {FILTERS.map((f) => {
               const active = f.key === status;
+              const params = new URLSearchParams();
+              if (type !== "all") params.set("type", type);
+              if (f.key !== "all") params.set("status", f.key);
+              if (client !== "all") params.set("client", client);
+              const href = `/admin${params.toString() ? `?${params}` : ""}`;
               return (
                 <Link
                   key={f.key}
-                  href={
-                    f.key === "all"
-                      ? "/admin"
-                      : `/admin?status=${f.key}${client !== "all" ? `&client=${client}` : ""}`
-                  }
+                  href={href}
                   className={`shrink-0 rounded-full px-3 py-1 text-xs font-semibold whitespace-nowrap transition-all ${
                     active
                       ? "bg-primary-600 text-white shadow-sm"
@@ -125,6 +186,32 @@ export default async function AdminDashboardPage({
               );
             })}
           </div>
+
+          <form method="get" className="flex gap-2 items-center sm:ml-auto">
+            {type !== "all" && <input type="hidden" name="type" value={type} />}
+            {status !== "all" && <input type="hidden" name="status" value={status} />}
+            <span className="text-[11px] font-bold uppercase tracking-wider text-neutral-500 shrink-0">
+              Client
+            </span>
+            <select
+              name="client"
+              defaultValue={client}
+              className="rounded-full bg-white ring-1 ring-neutral-200 px-3 py-1.5 text-xs font-semibold text-neutral-700 cursor-pointer focus:ring-primary-500 focus:outline-none"
+            >
+              <option value="all">Tous</option>
+              {(clients ?? []).map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.company_name}
+                </option>
+              ))}
+            </select>
+            <button
+              type="submit"
+              className="rounded-full bg-primary-600 px-3 py-1 text-[11px] font-bold text-white hover:bg-primary-700 transition"
+            >
+              Filtrer
+            </button>
+          </form>
         </div>
       </section>
 
@@ -141,6 +228,8 @@ export default async function AdminDashboardPage({
           <table className="w-full text-sm">
             <thead className="bg-neutral-50 text-[11px] uppercase tracking-wider text-neutral-500">
               <tr>
+                <th className="text-left px-4 py-3 font-semibold w-8"></th>
+                <th className="text-left px-4 py-3 font-semibold">Type</th>
                 <th className="text-left px-4 py-3 font-semibold">Référence</th>
                 <th className="text-left px-4 py-3 font-semibold">Client</th>
                 <th className="text-left px-4 py-3 font-semibold">Poste</th>
@@ -152,12 +241,24 @@ export default async function AdminDashboardPage({
             <tbody className="divide-y divide-neutral-100">
               {(requests ?? []).map((req, i) => {
                 const meta = STATUS_META[req.status as RequestStatus];
+                const typeMeta = REQUEST_TYPE_ROW_META[req.request_type ?? "recrutement"] ?? REQUEST_TYPE_ROW_META.recrutement;
                 return (
                   <tr
                     key={req.id}
-                    className="hover:bg-primary-50/40 transition-colors animate-fade-up"
+                    className="hover:bg-primary-50/40 transition-colors animate-fade-up relative"
                     style={{ animationDelay: `${i * 40}ms` }}
                   >
+                    <td className="px-0 py-0">
+                      <span className={`block w-1.5 h-full min-h-[3.5rem] ${typeMeta.barClass}`} />
+                    </td>
+                    <td className="px-4 py-3">
+                      <span
+                        className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-bold ring-1 ring-inset whitespace-nowrap ${typeMeta.badgeClass}`}
+                      >
+                        <span>{typeMeta.emoji}</span>
+                        {typeMeta.label}
+                      </span>
+                    </td>
                     <td className="px-4 py-3 font-mono text-[11px] text-neutral-500 whitespace-nowrap">
                       {req.reference}
                     </td>
