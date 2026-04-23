@@ -29,6 +29,25 @@ export async function getFormationProgramUrlAction(path: string) {
 }
 
 export async function submitFormationRequestAction(formData: FormData) {
+  try {
+    return await doSubmitFormationRequest(formData);
+  } catch (e) {
+    // Les redirects Next.js lèvent une erreur spéciale qu'il faut laisser remonter.
+    if (e && typeof e === "object" && "digest" in e) {
+      const digest = String((e as { digest: unknown }).digest);
+      if (digest.startsWith("NEXT_REDIRECT") || digest.startsWith("NEXT_NOT_FOUND")) {
+        throw e;
+      }
+    }
+    console.error("[submitFormationRequestAction] unhandled error:", e);
+    return {
+      ok: false as const,
+      error: `Erreur serveur : ${(e as Error).message}`,
+    };
+  }
+}
+
+async function doSubmitFormationRequest(formData: FormData) {
   const supabase = await createServerClient();
   const {
     data: { user },
