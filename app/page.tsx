@@ -20,14 +20,14 @@ export default function LoginPage() {
 
           <div className="max-w-md space-y-6 animate-fade-up">
             <h1 className="text-4xl xl:text-6xl font-extrabold leading-[1.05] tracking-tight">
-              Votre talent,
+              Recruter avec stratégie,
               <br />
-              <span className="text-accent-300">notre mission.</span>
+              <span className="text-accent-300">grandir avec excellence.</span>
             </h1>
             <p className="text-primary-100 text-lg leading-relaxed">
-              Déposez vos demandes de personnel intérimaire en quelques
-              secondes. Nous vous proposons les meilleurs candidats, vous
-              validez.
+              Déposez vos demandes de recrutement (CDD, CDI, missions
+              ponctuelles) en quelques secondes. Nous vous proposons les
+              meilleurs candidats, vous validez.
             </p>
 
             <ul className="flex flex-col gap-3 pt-4">
@@ -62,7 +62,7 @@ export default function LoginPage() {
           </div>
 
           <p className="text-sm text-primary-200/80">
-            © {new Date().getFullYear()} Forma Interim — Tous droits réservés
+            © {new Date().getFullYear()} ASCV CONSEILS — Tous droits réservés
           </p>
         </div>
       </aside>
@@ -89,7 +89,7 @@ export default function LoginPage() {
             <p className="mt-8 text-center text-sm text-neutral-600">
               Pas encore de compte ?{" "}
               <Link
-                href="mailto:contact@forma-interim.fr"
+                href="mailto:contact@ascv-conseils.fr"
                 className="font-medium text-primary-600 hover:text-accent-500 transition-colors"
               >
                 Contactez-nous

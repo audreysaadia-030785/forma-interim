@@ -20,7 +20,7 @@ export async function submitRequestAction(formData: FormData) {
     .maybeSingle();
 
   if (!clientRow) return { ok: false, error: "Aucun compte client lié à cet utilisateur." };
-  if (!clientRow.active) return { ok: false, error: "Votre compte est désactivé. Contactez Forma Interim." };
+  if (!clientRow.active) return { ok: false, error: "Votre compte est désactivé. Contactez ASCV CONSEILS." };
 
   // Lire tous les champs du formulaire.
   const jobLabel = String(formData.get("jobLabel") || "").trim();

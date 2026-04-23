@@ -4,7 +4,7 @@ import { Topbar } from "../components/topbar";
 import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = {
-  title: "Espace client — Forma Interim",
+  title: "Espace client — ASCV CONSEILS",
 };
 
 export default async function ClientLayout({
@@ -41,8 +41,8 @@ export default async function ClientLayout({
       <footer className="border-t border-neutral-200 bg-white">
         <div className="mx-auto max-w-6xl px-6 py-6 text-sm text-neutral-500 flex flex-col sm:flex-row gap-2 sm:justify-between items-center">
           <span>
-            © {new Date().getFullYear()} Forma Interim — Votre talent, notre
-            mission
+            © {new Date().getFullYear()} ASCV CONSEILS — Recruter avec
+            stratégie, grandir avec excellence
           </span>
           <span className="flex items-center gap-4">
             <a

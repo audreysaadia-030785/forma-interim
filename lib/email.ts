@@ -11,10 +11,10 @@ function getResend(): Resend | null {
   return new Resend(key);
 }
 
-const FROM = process.env.EMAIL_FROM ?? "Forma Interim <onboarding@resend.dev>";
+const FROM = process.env.EMAIL_FROM ?? "ASCV CONSEILS <onboarding@resend.dev>";
 const ADMIN = process.env.EMAIL_ADMIN ?? "contact.audreysaadia@gmail.com";
 const APP_URL =
-  process.env.NEXT_PUBLIC_APP_URL ?? "https://forma-interim.vercel.app";
+  process.env.NEXT_PUBLIC_APP_URL ?? "https://ascv-conseils.vercel.app";
 
 async function send(options: {
   to: string | string[];
@@ -45,7 +45,7 @@ async function send(options: {
 }
 
 /* =========================================================================
- * Layout commun (en-tête, pied, couleurs Forma Interim)
+ * Layout commun (en-tête, pied, couleurs ASCV CONSEILS)
  * ========================================================================= */
 
 function layout({ title, content }: { title: string; content: string }) {
@@ -56,18 +56,18 @@ function layout({ title, content }: { title: string; content: string }) {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>${escapeHtml(title)}</title>
 </head>
-<body style="margin:0;padding:0;background:#f4f4f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',sans-serif;color:#0e1c2e;">
+<body style="margin:0;padding:0;background:#f8f4ed;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',sans-serif;color:#2c1f15;">
   <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="padding:32px 16px;">
     <tr>
       <td align="center">
-        <table role="presentation" cellpadding="0" cellspacing="0" width="600" style="max-width:600px;background:#ffffff;border-radius:16px;box-shadow:0 4px 24px rgba(14,28,46,0.08);overflow:hidden;">
+        <table role="presentation" cellpadding="0" cellspacing="0" width="600" style="max-width:600px;background:#ffffff;border-radius:16px;box-shadow:0 4px 24px rgba(44,31,21,0.08);overflow:hidden;">
           <tr>
-            <td style="background:linear-gradient(135deg,#12405a 0%,#1f7fb0 55%,#2c9cd4 100%);padding:24px 32px;">
-              <div style="font-size:20px;font-weight:800;color:#ffffff;letter-spacing:-0.02em;">
-                <span style="color:#ffffff;">FORMA</span>
-                <span style="color:#f5a623;">INTERIM</span>
+            <td style="background:linear-gradient(135deg,#1a120b 0%,#3e2a1f 55%,#6b4f37 100%);padding:24px 32px;">
+              <div style="font-size:20px;font-weight:800;color:#ffffff;letter-spacing:0.08em;">
+                <span style="color:#ffffff;">ASCV</span>
+                <span style="color:#c9a55e;">CONSEILS</span>
               </div>
-              <div style="font-size:11px;font-style:italic;color:#d6edf7;margin-top:2px;">Votre talent, notre mission</div>
+              <div style="font-size:11px;font-style:italic;color:#ebe2d1;margin-top:2px;">Recruter avec stratégie, grandir avec excellence</div>
             </td>
           </tr>
           <tr>
@@ -77,8 +77,8 @@ function layout({ title, content }: { title: string; content: string }) {
           </tr>
           <tr>
             <td style="padding:16px 32px;background:#fafafa;border-top:1px solid #e4e4e7;font-size:12px;color:#71717a;text-align:center;">
-              Cet email vous a été envoyé automatiquement par Forma Interim.<br>
-              © ${new Date().getFullYear()} Forma Interim
+              Cet email vous a été envoyé automatiquement par ASCV CONSEILS.<br>
+              © ${new Date().getFullYear()} ASCV CONSEILS
             </td>
           </tr>
         </table>
@@ -92,7 +92,7 @@ function layout({ title, content }: { title: string; content: string }) {
 function button(href: string, label: string) {
   return `<table role="presentation" cellpadding="0" cellspacing="0" style="margin:24px 0;">
     <tr>
-      <td style="background:#f5a623;border-radius:12px;">
+      <td style="background:#c9a55e;border-radius:12px;">
         <a href="${escapeHtml(href)}" style="display:inline-block;padding:12px 24px;color:#ffffff;text-decoration:none;font-weight:700;font-size:14px;">
           ${escapeHtml(label)} →
         </a>
@@ -123,11 +123,11 @@ export async function sendClientWelcomeEmail(params: {
 }) {
   const loginUrl = APP_URL;
   const html = layout({
-    title: "Bienvenue sur Forma Interim",
+    title: "Bienvenue sur ASCV CONSEILS",
     content: `
-      <h1 style="font-size:24px;font-weight:800;color:#0e1c2e;margin:0 0 12px;">Bienvenue ${escapeHtml(params.primaryContactName)} 👋</h1>
+      <h1 style="font-size:24px;font-weight:800;color:#2c1f15;margin:0 0 12px;">Bienvenue ${escapeHtml(params.primaryContactName)} 👋</h1>
       <p style="font-size:15px;line-height:1.6;color:#3f3f46;margin:0 0 16px;">
-        Votre compte entreprise <strong>${escapeHtml(params.companyName)}</strong> vient d'être créé sur la plateforme Forma Interim.
+        Votre compte entreprise <strong>${escapeHtml(params.companyName)}</strong> vient d'être créé sur la plateforme ASCV CONSEILS.
       </p>
       <p style="font-size:15px;line-height:1.6;color:#3f3f46;margin:0 0 16px;">
         Voici vos identifiants de connexion :
@@ -135,11 +135,11 @@ export async function sendClientWelcomeEmail(params: {
       <table role="presentation" cellpadding="0" cellspacing="0" style="background:#f4f4f5;border-radius:12px;padding:16px;margin:16px 0;width:100%;">
         <tr>
           <td style="font-size:12px;color:#71717a;padding:4px 12px;">Email</td>
-          <td style="font-size:14px;font-weight:600;color:#0e1c2e;padding:4px 12px;font-family:monospace;">${escapeHtml(params.to)}</td>
+          <td style="font-size:14px;font-weight:600;color:#2c1f15;padding:4px 12px;font-family:monospace;">${escapeHtml(params.to)}</td>
         </tr>
         <tr>
           <td style="font-size:12px;color:#71717a;padding:4px 12px;">Mot de passe initial</td>
-          <td style="font-size:14px;font-weight:600;color:#0e1c2e;padding:4px 12px;font-family:monospace;">${escapeHtml(params.password)}</td>
+          <td style="font-size:14px;font-weight:600;color:#2c1f15;padding:4px 12px;font-family:monospace;">${escapeHtml(params.password)}</td>
         </tr>
       </table>
       <p style="font-size:14px;line-height:1.5;color:#71717a;margin:0 0 16px;">
@@ -147,14 +147,14 @@ export async function sendClientWelcomeEmail(params: {
       </p>
       ${button(loginUrl, "Accéder à la plateforme")}
       <p style="font-size:14px;line-height:1.6;color:#3f3f46;margin:16px 0 0;">
-        Une fois connecté(e), vous pourrez saisir vos demandes de personnel intérimaire en quelques minutes — nous vous proposerons rapidement les meilleurs candidats adaptés à vos besoins.
+        Une fois connecté(e), vous pourrez saisir vos besoins en recrutement (CDD, CDI, missions) en quelques minutes — nous vous proposerons rapidement les meilleurs profils adaptés à vos enjeux stratégiques.
       </p>
     `,
   });
 
   return send({
     to: params.to,
-    subject: "Bienvenue sur Forma Interim — Vos identifiants",
+    subject: "Bienvenue sur ASCV CONSEILS — Vos identifiants",
     html,
   });
 }
@@ -173,7 +173,7 @@ export async function sendNewRequestAdminEmail(params: {
   const html = layout({
     title: `Nouvelle demande — ${params.reference}`,
     content: `
-      <h1 style="font-size:22px;font-weight:800;color:#0e1c2e;margin:0 0 12px;">🆕 Nouvelle demande reçue</h1>
+      <h1 style="font-size:22px;font-weight:800;color:#2c1f15;margin:0 0 12px;">🆕 Nouvelle demande reçue</h1>
       <p style="font-size:15px;line-height:1.6;color:#3f3f46;margin:0 0 16px;">
         <strong>${escapeHtml(params.clientCompanyName)}</strong> vient de déposer une nouvelle demande sur la plateforme.
       </p>
@@ -207,7 +207,7 @@ export async function sendCandidatesProposedEmail(params: {
   const html = layout({
     title: "Candidats proposés pour votre demande",
     content: `
-      <h1 style="font-size:22px;font-weight:800;color:#0e1c2e;margin:0 0 12px;">✨ Vos candidats sont prêts !</h1>
+      <h1 style="font-size:22px;font-weight:800;color:#2c1f15;margin:0 0 12px;">✨ Vos candidats sont prêts !</h1>
       <p style="font-size:15px;line-height:1.6;color:#3f3f46;margin:0 0 16px;">
         Nous avons sélectionné <strong>${params.candidatesCount} profil${params.candidatesCount > 1 ? "s" : ""}</strong> pour votre demande <strong>${escapeHtml(params.jobLabel)}</strong> (${escapeHtml(params.reference)}).
       </p>
@@ -239,7 +239,7 @@ export async function sendProposalDecisionEmail(params: {
   const html = layout({
     title: ok ? "Candidat validé" : "Candidat refusé",
     content: `
-      <h1 style="font-size:22px;font-weight:800;color:#0e1c2e;margin:0 0 12px;">
+      <h1 style="font-size:22px;font-weight:800;color:#2c1f15;margin:0 0 12px;">
         ${ok ? "✅" : "❌"} ${escapeHtml(params.clientCompanyName)} a ${ok ? "validé" : "refusé"} un candidat
       </h1>
       <p style="font-size:15px;line-height:1.6;color:#3f3f46;margin:0 0 16px;">

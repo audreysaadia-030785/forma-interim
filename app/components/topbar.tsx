@@ -45,12 +45,12 @@ export function Topbar({ role, userName, userCompany }: TopbarProps) {
         >
           <BrandMark size="sm" withText={false} />
           <span className="hidden sm:flex flex-col leading-tight">
-            <span className="text-sm font-extrabold tracking-tight">
-              <span className="text-primary-600">FORMA</span>{" "}
-              <span className="text-accent-500">INTERIM</span>
+            <span className="text-sm font-extrabold tracking-[0.08em]">
+              <span className="text-primary-700">ASCV</span>{" "}
+              <span className="text-accent-500">CONSEILS</span>
             </span>
             <span className="text-[10px] italic text-neutral-500">
-              Votre talent, notre mission
+              Recruter avec stratégie, grandir avec excellence
             </span>
           </span>
         </Link>

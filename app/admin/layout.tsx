@@ -4,7 +4,7 @@ import { Topbar } from "../components/topbar";
 import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = {
-  title: "Espace admin — Forma Interim",
+  title: "Espace admin — ASCV CONSEILS",
 };
 
 export default async function AdminLayout({
@@ -30,12 +30,12 @@ export default async function AdminLayout({
       <Topbar
         role="admin"
         userName={profile?.full_name ?? user.email ?? "Admin"}
-        userCompany="Forma Interim"
+        userCompany="ASCV CONSEILS"
       />
       <main className="flex-1">{children}</main>
       <footer className="border-t border-neutral-200 bg-white">
         <div className="mx-auto max-w-7xl px-6 py-6 text-sm text-neutral-500 flex flex-col sm:flex-row gap-2 sm:justify-between items-center">
-          <span>© {new Date().getFullYear()} Forma Interim — Administration</span>
+          <span>© {new Date().getFullYear()} ASCV CONSEILS — Administration</span>
           <span className="text-xs text-neutral-400">
             Espace réservé — Actions tracées et journalisées
           </span>

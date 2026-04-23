@@ -10,9 +10,9 @@ const poppins = Poppins({
 });
 
 export const metadata: Metadata = {
-  title: "Forma Interim — Votre partenaire en personnel intérimaire",
+  title: "ASCV CONSEILS — Recrutement & conseil en stratégie",
   description:
-    "Gérez vos demandes de personnel intérimaire et vos candidats en toute simplicité.",
+    "Recruter avec stratégie, grandir avec excellence. Plateforme de recrutement CDD/CDI et de conseil en stratégie d'entreprise.",
 };
 
 export default function RootLayout({

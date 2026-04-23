@@ -1,26 +1,26 @@
 @import "tailwindcss";
 
 @theme {
-  /* Brand — Forma Interim (bleu lumineux et moderne tiré du logo) */
-  --color-primary-50: #eff8fc;
-  --color-primary-100: #d6edf7;
-  --color-primary-200: #aedbef;
-  --color-primary-300: #7cc5e5;
-  --color-primary-400: #47aada;
-  --color-primary-500: #2c9cd4;
-  --color-primary-600: #1f7fb0;
-  --color-primary-700: #1b6691;
-  --color-primary-800: #195475;
-  --color-primary-900: #12405a;
+  /* Brand — ASCV CONSEILS (chocolat profond + or champagne) */
+  --color-primary-50: #f8f4ed;
+  --color-primary-100: #ebe2d1;
+  --color-primary-200: #d8c5a8;
+  --color-primary-300: #b89c75;
+  --color-primary-400: #8b6e4d;
+  --color-primary-500: #6b4f37;
+  --color-primary-600: #4a3826;
+  --color-primary-700: #3e2a1f;
+  --color-primary-800: #2c1f15;
+  --color-primary-900: #1a120b;
 
-  --color-accent-50: #fef6e7;
-  --color-accent-100: #fde7bf;
-  --color-accent-200: #fbd288;
-  --color-accent-300: #f8bd54;
-  --color-accent-400: #f6ac32;
-  --color-accent-500: #f39c12;
-  --color-accent-600: #d4820a;
-  --color-accent-700: #a8660a;
+  --color-accent-50: #fbf6e8;
+  --color-accent-100: #f5ebc7;
+  --color-accent-200: #ecd693;
+  --color-accent-300: #ddbb6c;
+  --color-accent-400: #d2ad5d;
+  --color-accent-500: #c9a55e;
+  --color-accent-600: #b08840;
+  --color-accent-700: #8a6730;
 
   --color-neutral-50: #fafafa;
   --color-neutral-100: #f4f4f5;
@@ -41,7 +41,7 @@
 
 :root {
   --background: #ffffff;
-  --foreground: #0e1c2e;
+  --foreground: #2c1f15;
 }
 
 body {
@@ -86,10 +86,10 @@ body {
   animation: slide-in 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
-/* Gradient background used on the login hero */
+/* Gradient background — sommet brun + dorures pour ASCV Conseils */
 .bg-brand-gradient {
   background:
-    radial-gradient(1100px 550px at 100% 0%, rgba(243, 156, 18, 0.25), transparent 60%),
-    radial-gradient(900px 550px at 0% 100%, rgba(124, 197, 229, 0.35), transparent 60%),
-    linear-gradient(135deg, #12405a 0%, #1f7fb0 55%, #2c9cd4 100%);
+    radial-gradient(1100px 550px at 100% 0%, rgba(201, 165, 94, 0.28), transparent 60%),
+    radial-gradient(900px 550px at 0% 100%, rgba(216, 197, 168, 0.18), transparent 60%),
+    linear-gradient(135deg, #1a120b 0%, #3e2a1f 55%, #6b4f37 100%);
 }
