@@ -151,41 +151,52 @@ export default async function ClientDashboardPage({
       </section>
 
       <section className="animate-fade-up">
-        <div className="flex flex-col gap-4 mb-4">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-            <h2 className="text-xl font-bold text-primary-900">Mes demandes</h2>
-            <RequestsFilter current={status} />
+        <div className="mb-5 space-y-3">
+          <h2 className="text-xl font-bold text-primary-900">Mes demandes</h2>
+
+          {/* FILTRE PRINCIPAL — Type de demande */}
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-primary-700 shrink-0">
+              Type
+            </span>
+            <div className="flex flex-wrap gap-2">
+              {(
+                [
+                  { key: "all", label: "Toutes", emoji: "📋" },
+                  { key: "recrutement", label: "Recrutement", emoji: "👥" },
+                  { key: "formation", label: "Formation", emoji: "🎓" },
+                  { key: "accompagnement_rh", label: "Accompagnement RH", emoji: "⚖️" },
+                ] as const
+              ).map((t) => {
+                const active = type === t.key;
+                const href =
+                  t.key === "all"
+                    ? `/client${status !== "all" ? `?status=${status}` : ""}`
+                    : `/client?type=${t.key}${status !== "all" ? `&status=${status}` : ""}`;
+                return (
+                  <a
+                    key={t.key}
+                    href={href}
+                    className={`inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-bold transition-all ${
+                      active
+                        ? "bg-primary-700 text-white shadow-md"
+                        : "bg-white ring-1 ring-neutral-200 text-neutral-700 hover:bg-primary-50 hover:ring-primary-300"
+                    }`}
+                  >
+                    <span>{t.emoji}</span>
+                    {t.label}
+                  </a>
+                );
+              })}
+            </div>
           </div>
-          {/* Onglets par type de demande */}
-          <div className="flex flex-wrap gap-2">
-            {(
-              [
-                { key: "all", label: "Toutes", emoji: "📋", cls: "primary" },
-                { key: "recrutement", label: "Recrutement", emoji: "👥", cls: "primary" },
-                { key: "formation", label: "Formation", emoji: "🎓", cls: "accent" },
-                { key: "accompagnement_rh", label: "Accompagnement RH", emoji: "⚖️", cls: "emerald" },
-              ] as const
-            ).map((t) => {
-              const active = type === t.key;
-              const href =
-                t.key === "all"
-                  ? `/client${status !== "all" ? `?status=${status}` : ""}`
-                  : `/client?type=${t.key}${status !== "all" ? `&status=${status}` : ""}`;
-              return (
-                <a
-                  key={t.key}
-                  href={href}
-                  className={`inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-bold transition-all ${
-                    active
-                      ? "bg-primary-700 text-white shadow-sm"
-                      : "bg-white ring-1 ring-neutral-200 text-neutral-700 hover:bg-primary-50 hover:ring-primary-300"
-                  }`}
-                >
-                  <span>{t.emoji}</span>
-                  {t.label}
-                </a>
-              );
-            })}
+
+          {/* FILTRE SECONDAIRE — Statut (plus petit, visuellement discret) */}
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-neutral-500 shrink-0">
+              Statut
+            </span>
+            <RequestsFilter current={status} typeFilter={type} />
           </div>
         </div>
 

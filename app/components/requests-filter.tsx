@@ -14,9 +14,20 @@ const FILTERS: Array<{ key: RequestStatus | "all"; label: string }> = [
 
 export function RequestsFilter({
   current,
+  typeFilter,
 }: {
   current: RequestStatus | "all";
+  /** Filtre type à conserver dans l'URL (all, recrutement, formation, accompagnement_rh). */
+  typeFilter?: string;
 }) {
+  function hrefFor(key: RequestStatus | "all"): string {
+    const params = new URLSearchParams();
+    if (typeFilter && typeFilter !== "all") params.set("type", typeFilter);
+    if (key !== "all") params.set("status", key);
+    const qs = params.toString();
+    return `/client${qs ? `?${qs}` : ""}`;
+  }
+
   return (
     <div className="flex gap-1 overflow-x-auto rounded-full bg-white ring-1 ring-neutral-200 p-1 self-start">
       {FILTERS.map((f) => {
@@ -24,8 +35,8 @@ export function RequestsFilter({
         return (
           <Link
             key={f.key}
-            href={f.key === "all" ? "/client" : `/client?status=${f.key}`}
-            className={`shrink-0 rounded-full px-3.5 py-1.5 text-xs font-semibold whitespace-nowrap transition-all ${
+            href={hrefFor(f.key)}
+            className={`shrink-0 rounded-full px-3 py-1 text-xs font-semibold whitespace-nowrap transition-all ${
               active
                 ? "bg-primary-600 text-white shadow-sm"
                 : "text-neutral-600 hover:bg-neutral-100 hover:text-primary-700"
