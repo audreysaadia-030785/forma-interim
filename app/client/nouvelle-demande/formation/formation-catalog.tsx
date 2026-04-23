@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import type { Formation, SuperCategory } from "@/lib/formations-catalog";
-import { styleFor } from "@/lib/formation-icons";
+import { photoForSuperCategory, styleFor } from "@/lib/formation-icons";
 
 type Props = {
   formations: Formation[];
@@ -327,7 +327,7 @@ function FormationCard({
   index: number;
 }) {
   const style = styleFor(formation.category);
-  // Conserver le choix initial/recyclage dans l'URL pour pré-sélectionner côté form.
+  const photoUrl = photoForSuperCategory(formation.superCategory);
   const href = `/client/nouvelle-demande/formation/${formation.id}?kind=${kind}`;
 
   return (
@@ -336,41 +336,52 @@ function FormationCard({
       className="group block animate-fade-up"
       style={{ animationDelay: `${index * 30}ms` }}
     >
-      <article className="h-full rounded-[var(--radius-card)] bg-white ring-1 ring-neutral-200 shadow-sm hover:shadow-md hover:ring-primary-200 hover:-translate-y-0.5 transition-all p-4 flex flex-col">
-        <div className="flex items-start gap-3">
+      <article className="h-full rounded-[var(--radius-card)] bg-white ring-1 ring-neutral-200 shadow-sm hover:shadow-md hover:ring-primary-200 hover:-translate-y-0.5 transition-all flex flex-col overflow-hidden">
+        {/* Bandeau photo super-catégorie */}
+        <div className="relative h-24 w-full overflow-hidden bg-neutral-100">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={photoUrl}
+            alt=""
+            loading="lazy"
+            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+          />
+          {/* Overlay + pictogramme catégorie détaillée */}
+          <div className="absolute inset-0 bg-gradient-to-t from-primary-900/60 via-primary-900/10 to-transparent" />
           <span
-            className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-xl ${style.iconBgClass}`}
+            className={`absolute bottom-2 left-2 flex h-9 w-9 items-center justify-center rounded-xl text-lg shadow-md ${style.iconBgClass}`}
+            title={formation.category}
           >
             {style.emoji}
           </span>
-          <div className="flex-1 min-w-0">
-            <h3 className="font-bold text-sm text-primary-900 leading-snug group-hover:text-primary-600 transition-colors">
-              {formation.title}
-            </h3>
-            {formation.hasRecyclage && (
-              <p className="mt-1 text-[10px] font-bold text-emerald-700">
-                ↻ Recyclage disponible
-              </p>
-            )}
-          </div>
+          {formation.hasRecyclage && (
+            <span className="absolute top-2 right-2 inline-flex items-center rounded-full bg-emerald-500/95 px-2 py-0.5 text-[10px] font-bold text-white shadow-md">
+              ↻ Recyclage
+            </span>
+          )}
         </div>
 
-        <div className="mt-auto pt-3 flex items-center justify-end text-xs font-bold text-primary-600 group-hover:text-accent-600 transition-colors">
-          Demander
-          <svg
-            className="ml-1 h-3.5 w-3.5 transition-transform group-hover:translate-x-1"
-            viewBox="0 0 20 20"
-            fill="none"
-            aria-hidden="true"
-          >
-            <path
-              d="M4.5 10h11m0 0L10 4.5M15.5 10 10 15.5"
-              stroke="currentColor"
-              strokeWidth="2.2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
+        <div className="p-4 flex flex-col flex-1">
+          <h3 className="font-bold text-sm text-primary-900 leading-snug group-hover:text-primary-600 transition-colors">
+            {formation.title}
+          </h3>
+          <div className="mt-auto pt-3 flex items-center justify-end text-xs font-bold text-primary-600 group-hover:text-accent-600 transition-colors">
+            Demander
+            <svg
+              className="ml-1 h-3.5 w-3.5 transition-transform group-hover:translate-x-1"
+              viewBox="0 0 20 20"
+              fill="none"
+              aria-hidden="true"
+            >
+              <path
+                d="M4.5 10h11m0 0L10 4.5M15.5 10 10 15.5"
+                stroke="currentColor"
+                strokeWidth="2.2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </div>
         </div>
       </article>
     </Link>

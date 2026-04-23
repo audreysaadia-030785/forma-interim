@@ -138,6 +138,8 @@ export type RequestStatus =
 
 export type InterimRequest = {
   id: string;
+  /** Référence lisible REQ-YYYY-NNNN. */
+  reference?: string;
   clientId: string;
   clientCompanyName: string;
   poste: string;

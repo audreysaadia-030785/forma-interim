@@ -13,8 +13,35 @@ type Props = {
   basePath?: string;
 };
 
+// Métadonnées visuelles par type de demande.
+const TYPE_META: Record<
+  string,
+  { label: string; emoji: string; barClass: string; badgeClass: string }
+> = {
+  recrutement: {
+    label: "Recrutement",
+    emoji: "👥",
+    barClass: "bg-primary-500",
+    badgeClass: "bg-primary-50 text-primary-700 ring-primary-200",
+  },
+  formation: {
+    label: "Formation",
+    emoji: "🎓",
+    barClass: "bg-accent-500",
+    badgeClass: "bg-accent-50 text-accent-700 ring-accent-200",
+  },
+  accompagnement_rh: {
+    label: "Accompagnement RH",
+    emoji: "⚖️",
+    barClass: "bg-emerald-500",
+    badgeClass: "bg-emerald-50 text-emerald-700 ring-emerald-200",
+  },
+};
+
 export function RequestCard({ request, index = 0, basePath = "/client" }: Props) {
   const meta = STATUS_META[request.status];
+  const typeMeta =
+    TYPE_META[request.requestType ?? "recrutement"] ?? TYPE_META.recrutement;
   const href = `${basePath}/demande/${request.id}`;
 
   return (
@@ -23,11 +50,23 @@ export function RequestCard({ request, index = 0, basePath = "/client" }: Props)
       className="group block animate-fade-up"
       style={{ animationDelay: `${index * 70}ms` }}
     >
-      <article className="relative rounded-[var(--radius-card)] bg-white ring-1 ring-neutral-200 p-5 sm:p-6 shadow-sm hover:shadow-lg hover:-translate-y-0.5 hover:ring-primary-200 transition-all">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
-          <div className="flex items-center gap-3 flex-wrap">
-            <span className="text-xs font-mono text-neutral-500">
-              {request.id}
+      <article className="relative rounded-[var(--radius-card)] bg-white ring-1 ring-neutral-200 p-5 sm:p-6 shadow-sm hover:shadow-lg hover:-translate-y-0.5 hover:ring-primary-200 transition-all overflow-hidden">
+        {/* Barre verticale colorée à gauche = type de demande */}
+        <span
+          className={`absolute left-0 top-0 bottom-0 w-1.5 ${typeMeta.barClass}`}
+          aria-hidden="true"
+        />
+
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4 pl-2">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span
+              className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-bold ring-1 ring-inset ${typeMeta.badgeClass}`}
+            >
+              <span>{typeMeta.emoji}</span>
+              {typeMeta.label}
+            </span>
+            <span className="text-xs font-mono font-bold text-primary-700">
+              {request.reference ?? "—"}
             </span>
             <span
               className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ${meta.badge}`}

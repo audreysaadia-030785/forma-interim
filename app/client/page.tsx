@@ -7,12 +7,17 @@ import type { InterimRequest, RequestStatus } from "@/lib/demo-data";
 
 export const dynamic = "force-dynamic";
 
+type RequestTypeFilter = "all" | "recrutement" | "formation" | "accompagnement_rh";
+
 export default async function ClientDashboardPage({
   searchParams,
 }: {
-  searchParams: Promise<{ status?: RequestStatus | "all" }>;
+  searchParams: Promise<{
+    status?: RequestStatus | "all";
+    type?: RequestTypeFilter;
+  }>;
 }) {
-  const { status = "all" } = await searchParams;
+  const { status = "all", type = "all" } = await searchParams;
   const supabase = await createClient();
 
   const {
@@ -37,11 +42,13 @@ export default async function ClientDashboardPage({
     .order("created_at", { ascending: false });
 
   if (status !== "all") query = query.eq("status", status);
+  if (type !== "all") query = query.eq("request_type", type);
 
   const { data: rawRequests } = await query;
 
   const requests: InterimRequest[] = (rawRequests ?? []).map((r) => ({
     id: r.id,
+    reference: r.reference,
     clientId: r.client_id,
     clientCompanyName:
       // @ts-expect-error relation typed as array by default
@@ -144,9 +151,42 @@ export default async function ClientDashboardPage({
       </section>
 
       <section className="animate-fade-up">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
-          <h2 className="text-xl font-bold text-primary-900">Mes demandes</h2>
-          <RequestsFilter current={status} />
+        <div className="flex flex-col gap-4 mb-4">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <h2 className="text-xl font-bold text-primary-900">Mes demandes</h2>
+            <RequestsFilter current={status} />
+          </div>
+          {/* Onglets par type de demande */}
+          <div className="flex flex-wrap gap-2">
+            {(
+              [
+                { key: "all", label: "Toutes", emoji: "📋", cls: "primary" },
+                { key: "recrutement", label: "Recrutement", emoji: "👥", cls: "primary" },
+                { key: "formation", label: "Formation", emoji: "🎓", cls: "accent" },
+                { key: "accompagnement_rh", label: "Accompagnement RH", emoji: "⚖️", cls: "emerald" },
+              ] as const
+            ).map((t) => {
+              const active = type === t.key;
+              const href =
+                t.key === "all"
+                  ? `/client${status !== "all" ? `?status=${status}` : ""}`
+                  : `/client?type=${t.key}${status !== "all" ? `&status=${status}` : ""}`;
+              return (
+                <a
+                  key={t.key}
+                  href={href}
+                  className={`inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-bold transition-all ${
+                    active
+                      ? "bg-primary-700 text-white shadow-sm"
+                      : "bg-white ring-1 ring-neutral-200 text-neutral-700 hover:bg-primary-50 hover:ring-primary-300"
+                  }`}
+                >
+                  <span>{t.emoji}</span>
+                  {t.label}
+                </a>
+              );
+            })}
+          </div>
         </div>
 
         {requests.length === 0 ? (
