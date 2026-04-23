@@ -17,24 +17,16 @@ export default function LoginPage() {
         </div>
 
         <div className="relative z-10 flex flex-col items-center justify-between p-12 xl:p-16 w-full text-center">
-          {/* Bloc logo + slogan, centré */}
-          <div className="flex flex-col items-center gap-2 animate-fade-up">
-            <div className="relative h-72 w-72 xl:h-96 xl:w-96">
-              <Image
-                src="/logo.png?v=ascv2"
-                alt="Logo ASCV CONSEILS"
-                fill
-                priority
-                sizes="384px"
-                className="object-contain drop-shadow-[0_8px_24px_rgba(201,165,94,0.25)]"
-              />
-            </div>
-            <p
-              className="text-[11px] italic text-accent-200 tracking-wide"
-              style={{ fontFamily: "'Times New Roman', Times, serif" }}
-            >
-              Recruter avec stratégie, grandir avec excellence
-            </p>
+          {/* Logo centré */}
+          <div className="relative h-72 w-72 xl:h-96 xl:w-96 animate-fade-up">
+            <Image
+              src="/logo.png?v=ascv2"
+              alt="Logo ASCV CONSEILS"
+              fill
+              priority
+              sizes="384px"
+              className="object-contain drop-shadow-[0_8px_24px_rgba(201,165,94,0.25)]"
+            />
           </div>
 
           <div className="max-w-md space-y-6 animate-fade-up">
