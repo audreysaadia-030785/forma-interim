@@ -2,6 +2,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { STATUS_META, formatShortDate, type RequestStatus } from "@/lib/demo-data";
 import { progressFor } from "@/lib/admin-checklists";
+import { TestEmailButton } from "./test-email-button";
 
 export const dynamic = "force-dynamic";
 
@@ -102,6 +103,7 @@ export default async function AdminDashboardPage({
             Supervisez les demandes de vos clients et proposez les bons profils.
           </p>
         </div>
+        <TestEmailButton />
       </header>
 
       <section className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-10 animate-fade-up">
