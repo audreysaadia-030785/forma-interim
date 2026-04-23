@@ -38,9 +38,10 @@ export default function ChooseRequestTypePage() {
 
         <ChoiceCard
           href="/client/nouvelle-demande/formation"
+          available
           title="Formation"
-          subtitle="Sur mesure · Catalogue"
-          description="Faites monter en compétences vos équipes grâce à des formations adaptées à vos enjeux métier et stratégiques."
+          subtitle="Catalogue de 123 formations"
+          description="Faites monter en compétences vos équipes grâce à nos formations Qualiopi en BTP, sécurité, management, IA, RH et bien plus."
           icon="academy"
           delay={120}
         />
