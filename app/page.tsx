@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { LoginForm } from "./(auth)/login-form";
 import { BrandMark } from "./components/brand-mark";
@@ -15,16 +16,34 @@ export default function LoginPage() {
           <div className="absolute bottom-0 right-0 h-[28rem] w-[28rem] rounded-full bg-primary-300/20 blur-3xl" />
         </div>
 
-        <div className="relative z-10 flex flex-col justify-between p-12 xl:p-16 w-full">
-          <BrandMark variant="light" size="xl" />
+        <div className="relative z-10 flex flex-col items-center justify-between p-12 xl:p-16 w-full text-center">
+          {/* Bloc logo + slogan, centré */}
+          <div className="flex flex-col items-center gap-2 animate-fade-up">
+            <div className="relative h-72 w-72 xl:h-96 xl:w-96">
+              <Image
+                src="/logo.png?v=ascv2"
+                alt="Logo ASCV CONSEILS"
+                fill
+                priority
+                sizes="384px"
+                className="object-contain drop-shadow-[0_8px_24px_rgba(201,165,94,0.25)]"
+              />
+            </div>
+            <p
+              className="text-[11px] italic text-accent-200 tracking-wide"
+              style={{ fontFamily: "'Times New Roman', Times, serif" }}
+            >
+              Recruter avec stratégie, grandir avec excellence
+            </p>
+          </div>
 
           <div className="max-w-md space-y-6 animate-fade-up">
-            <h1 className="text-4xl xl:text-6xl font-extrabold leading-[1.05] tracking-tight">
+            <h1 className="text-4xl xl:text-5xl font-extrabold leading-[1.1] tracking-tight">
               Recruter avec stratégie,
               <br />
               <span className="text-accent-300">grandir avec excellence.</span>
             </h1>
-            <p className="text-primary-100 text-lg leading-relaxed">
+            <p className="text-primary-100 text-base leading-relaxed">
               Déposez ici toutes vos demandes — <strong>recrutement</strong>{" "}
               (CDD, CDI), <strong>accompagnement RH</strong> ou{" "}
               <strong>formation</strong>. Nous mettons notre expertise à votre
@@ -32,7 +51,7 @@ export default function LoginPage() {
               enjeux stratégiques.
             </p>
 
-            <ul className="flex flex-col gap-3 pt-4">
+            <ul className="flex flex-col items-center gap-3 pt-4">
               {[
                 "Recrutement CDD / CDI",
                 "Accompagnement RH",
@@ -40,7 +59,7 @@ export default function LoginPage() {
               ].map((label, index) => (
                 <li
                   key={label}
-                  className="group inline-flex items-center gap-3 self-start rounded-full bg-white/10 backdrop-blur px-4 py-2 text-sm font-medium text-white ring-1 ring-white/15 shadow-lg shadow-primary-900/10 cursor-default animate-slide-in hover:bg-white/20 hover:ring-accent-400/50 hover:scale-[1.06] hover:-translate-y-0.5 transition-all duration-300 ease-out"
+                  className="group inline-flex items-center gap-3 rounded-full bg-white/10 backdrop-blur px-4 py-2 text-sm font-medium text-white ring-1 ring-white/15 shadow-lg shadow-primary-900/10 cursor-default animate-slide-in hover:bg-white/20 hover:ring-accent-400/50 hover:scale-[1.06] hover:-translate-y-0.5 transition-all duration-300 ease-out"
                   style={{ animationDelay: `${index * 180 + 200}ms` }}
                 >
                   <span className="flex h-9 w-9 items-center justify-center rounded-full bg-accent-500/90 text-white shadow-lg shadow-accent-500/25 transition-transform duration-300 group-hover:translate-x-1.5 group-hover:bg-accent-400">
