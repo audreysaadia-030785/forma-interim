@@ -22,11 +22,13 @@ export function Topbar({ role, userName, userCompany }: TopbarProps) {
       ? [
           { label: "Tableau de bord", href: "/client" },
           { label: "Nouvelle demande", href: "/client/nouvelle-demande" },
+          { label: "Mon RH", href: "/client/rh" },
         ]
       : [
           { label: "Demandes", href: "/admin" },
           { label: "Candidats", href: "/admin/candidats" },
           { label: "Clients", href: "/admin/clients" },
+          { label: "RH", href: "/admin/rh" },
         ];
 
   const initials = userName

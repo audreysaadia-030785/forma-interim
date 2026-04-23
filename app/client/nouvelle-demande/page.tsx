@@ -48,6 +48,7 @@ export default function ChooseRequestTypePage() {
 
         <ChoiceCard
           href="/client/nouvelle-demande/accompagnement-rh"
+          available
           title="Accompagnement RH"
           subtitle="Conseil · Audit · Stratégie"
           description="Bénéficiez d'un accompagnement RH stratégique : structuration, gestion des talents, conduite du changement, audit social."
