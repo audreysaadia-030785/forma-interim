@@ -8,6 +8,26 @@ import {
 } from "@/lib/supabase/server";
 import { sendNewRequestAdminEmail } from "@/lib/email";
 
+/**
+ * Retourne une URL signée (valide 2 min) pour le PDF programme d'une formation
+ * stocké dans le bucket Supabase "formation-programs" sous le nom <id>.pdf.
+ */
+export async function getFormationProgramUrlAction(path: string) {
+  const supabase = await createServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false as const, error: "Non authentifié" };
+
+  const admin = createServiceClient();
+  const { data: signed, error } = await admin.storage
+    .from("formation-programs")
+    .createSignedUrl(path, 120);
+  if (error || !signed)
+    return { ok: false as const, error: error?.message ?? "Introuvable" };
+  return { ok: true as const, url: signed.signedUrl };
+}
+
 export async function submitFormationRequestAction(formData: FormData) {
   const supabase = await createServerClient();
   const {
@@ -32,26 +52,39 @@ export async function submitFormationRequestAction(formData: FormData) {
   const formationId = String(formData.get("formationId") || "").trim();
   const formationTitle = String(formData.get("formationTitle") || "").trim();
   const formationCategory = String(formData.get("formationCategory") || "").trim();
+  const kind = String(formData.get("kind") || "initiale"); // initiale | recyclage
   const objectives = String(formData.get("objectives") || "").trim() || null;
   const participants = formData.get("participants")
     ? Number(formData.get("participants"))
     : null;
   const audienceLevel = String(formData.get("audienceLevel") || "").trim() || null;
   const startDate = String(formData.get("startDate") || "") || null;
-  const durationDays = formData.get("durationDays")
-    ? Number(formData.get("durationDays"))
-    : null;
   const format = String(formData.get("format") || "presentiel");
   const location = String(formData.get("location") || "").trim() || null;
   const pshPresent = String(formData.get("pshPresent") || "false") === "true";
   const accommodations = JSON.parse(String(formData.get("accommodations") || "[]"));
   const accommodationsDetails =
     String(formData.get("accommodationsDetails") || "").trim() || null;
-  const budget = String(formData.get("budget") || "").trim() || null;
+  const financingModes = JSON.parse(String(formData.get("financingModes") || "[]"));
+  const opcoName = String(formData.get("opcoName") || "").trim() || null;
+  const financingOther = String(formData.get("financingOther") || "").trim() || null;
   const contactName = String(formData.get("contactName") || "").trim();
   const contactEmail = String(formData.get("contactEmail") || "").trim();
   const contactPhone = String(formData.get("contactPhone") || "").trim();
   const attachment = formData.get("attachment") as File | null;
+
+  // Consolidation des infos de financement pour la description de la demande.
+  const financingSummary = [
+    ...financingModes.filter((m: string) => m !== "OPCO" && m !== "Autre (à préciser)"),
+    opcoName ? `OPCO : ${opcoName}` : financingModes.includes("OPCO") ? "OPCO (à préciser)" : null,
+    financingOther
+      ? `Autre : ${financingOther}`
+      : financingModes.includes("Autre (à préciser)")
+        ? "Autre (à préciser)"
+        : null,
+  ]
+    .filter(Boolean)
+    .join(" · ") || null;
 
   if (!formationId || !contactName || !contactEmail || !contactPhone) {
     return { ok: false, error: "Tous les champs obligatoires doivent être remplis." };
@@ -92,25 +125,24 @@ export async function submitFormationRequestAction(formData: FormData) {
       request_type: "formation",
       job_label: formationTitle,
       formation_id: formationId,
-      formation_title: formationTitle,
+      formation_title: `${formationTitle}${kind === "recyclage" ? " — Recyclage" : ""}`,
       formation_category: formationCategory,
       headcount: participants ?? 1,
       training_participants: participants,
       training_audience_level: audienceLevel,
       training_objectives: objectives,
       training_format: format,
-      training_duration_days: durationDays,
       start_date: startDate,
       location,
       psh_present: pshPresent,
       accommodations,
       accommodations_details: accommodationsDetails,
-      budget_hint: budget,
+      budget_hint: financingSummary,
       contact_name: contactName,
       contact_email: contactEmail,
       contact_phone: contactPhone,
       job_spec_path: attachmentPath,
-      description: objectives, // pour cohérence avec l'affichage admin
+      description: objectives,
     })
     .select("id, reference")
     .single();

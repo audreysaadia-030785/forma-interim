@@ -1,5 +1,9 @@
 import Link from "next/link";
-import { FORMATION_CATEGORIES, FORMATIONS } from "@/lib/formations-catalog";
+import {
+  FORMATIONS,
+  SUPER_CATEGORIES,
+  FORMATION_CATEGORIES,
+} from "@/lib/formations-catalog";
 import { FormationCatalog } from "./formation-catalog";
 
 export default function FormationCatalogPage() {
@@ -22,22 +26,24 @@ export default function FormationCatalogPage() {
 
       <header className="mb-8 animate-fade-up">
         <p className="text-sm font-semibold uppercase tracking-wider text-accent-500 mb-2">
-          Catalogue de formations
+          Notre offre
         </p>
         <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-primary-900">
-          {FORMATIONS.length} formations disponibles
+          Formations réglementaires, sécurité, soft skills et bien plus
         </h1>
         <p className="mt-2 text-neutral-600 max-w-2xl">
-          Parcourez notre catalogue, sélectionnez la formation qui répond à
-          votre besoin et formulez votre demande en quelques clics. Calendrier
-          ajusté en fonction de vos contraintes (nous consulter), devis
-          transmis sous <strong>48 h maximum</strong> après réception.
+          Parcourez notre offre pour sélectionner la formation qui répond à
+          votre besoin. Vous ne trouvez pas&nbsp;? Décrivez votre demande, nous
+          étudions toute requête sur mesure. Calendrier ajusté ensemble
+          (nous consulter), <strong>devis transmis sous 48&nbsp;h maximum</strong>{" "}
+          après réception.
         </p>
       </header>
 
       <FormationCatalog
         formations={FORMATIONS}
-        categories={FORMATION_CATEGORIES}
+        superCategories={SUPER_CATEGORIES}
+        detailedCategories={FORMATION_CATEGORIES}
       />
     </div>
   );
