@@ -31,7 +31,9 @@ export default async function AdminDashboardPage({
   let query = supabase
     .from("requests")
     .select(
-      "id, reference, client_id, job_label, headcount, start_date, duration_value, duration_unit, location, status, created_at, clients(company_name)",
+      `id, reference, client_id, job_label, headcount, start_date, duration_value, duration_unit, location, status, created_at,
+       request_type, contract_type, cdd_duration_months,
+       clients(company_name)`,
     )
     .order("created_at", { ascending: false });
   if (status !== "all") query = query.eq("status", status);
@@ -166,8 +168,16 @@ export default async function AdminDashboardPage({
                       }
                     </td>
                     <td className="px-4 py-3">
-                      <div className="font-semibold text-primary-900">
+                      <div className="font-semibold text-primary-900 flex items-center gap-2 flex-wrap">
                         {req.job_label}
+                        {req.contract_type && (
+                          <span className="inline-flex items-center rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-700 ring-1 ring-emerald-200 uppercase">
+                            {req.contract_type}
+                            {req.cdd_duration_months
+                              ? ` ${req.cdd_duration_months}m`
+                              : ""}
+                          </span>
+                        )}
                       </div>
                       <div className="text-xs text-neutral-500">
                         {req.headcount} poste{req.headcount > 1 ? "s" : ""} ·{" "}
@@ -177,7 +187,11 @@ export default async function AdminDashboardPage({
                     <td className="px-4 py-3 text-neutral-700 whitespace-nowrap">
                       {formatShortDate(req.start_date)}
                       <div className="text-xs text-neutral-500">
-                        {req.duration_value} {req.duration_unit}
+                        {req.duration_value && req.duration_unit
+                          ? `${req.duration_value} ${req.duration_unit}`
+                          : req.contract_type === "cdi"
+                            ? "Indéterminée"
+                            : "—"}
                       </div>
                     </td>
                     <td className="px-4 py-3">
