@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { STATUS_META, formatShortDate, type RequestStatus } from "@/lib/demo-data";
+import { progressFor } from "@/lib/admin-checklists";
 
 export const dynamic = "force-dynamic";
 
@@ -62,7 +63,7 @@ export default async function AdminDashboardPage({
     .from("requests")
     .select(
       `id, reference, client_id, job_label, headcount, start_date, duration_value, duration_unit, location, status, created_at,
-       request_type, contract_type, cdd_duration_months, formation_category,
+       request_type, contract_type, cdd_duration_months, formation_category, admin_checklist,
        clients(company_name)`,
     )
     .order("created_at", { ascending: false });
@@ -235,6 +236,7 @@ export default async function AdminDashboardPage({
                 <th className="text-left px-4 py-3 font-semibold">Poste</th>
                 <th className="text-left px-4 py-3 font-semibold">Démarrage</th>
                 <th className="text-left px-4 py-3 font-semibold">Statut</th>
+                <th className="text-left px-4 py-3 font-semibold">Avancement</th>
                 <th className="text-right px-4 py-3 font-semibold">Action</th>
               </tr>
             </thead>
@@ -302,6 +304,35 @@ export default async function AdminDashboardPage({
                         <span className={`h-1.5 w-1.5 rounded-full ${meta.dot}`} />
                         {meta.label}
                       </span>
+                    </td>
+                    <td className="px-4 py-3 whitespace-nowrap">
+                      {(() => {
+                        const { done, total, percent } = progressFor(
+                          req.request_type ?? "recrutement",
+                          (req.admin_checklist ?? {}) as Record<string, { done: boolean; done_at: string | null }>,
+                        );
+                        const color =
+                          percent === 100
+                            ? "bg-emerald-500"
+                            : percent >= 66
+                              ? "bg-primary-600"
+                              : percent >= 33
+                                ? "bg-accent-500"
+                                : "bg-neutral-300";
+                        return (
+                          <div className="flex items-center gap-2">
+                            <div className="h-1.5 w-20 rounded-full bg-neutral-100 overflow-hidden">
+                              <div
+                                className={`h-full ${color}`}
+                                style={{ width: `${percent}%` }}
+                              />
+                            </div>
+                            <span className="text-xs font-semibold text-neutral-600 w-14">
+                              {done}/{total}
+                            </span>
+                          </div>
+                        );
+                      })()}
                     </td>
                     <td className="px-4 py-3 text-right">
                       <Link

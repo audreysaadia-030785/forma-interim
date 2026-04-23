@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { STATUS_META, formatDate, type RequestStatus } from "@/lib/demo-data";
 import { rankCandidates, type MatchInputCandidate } from "@/lib/matching";
 import { ProposeCandidatesPanel } from "./propose-candidates-panel";
+import { AdminChecklist } from "./admin-checklist";
 import { styleFor, photoForSuperCategory } from "@/lib/formation-icons";
 import { FORMATIONS } from "@/lib/formations-catalog";
 
@@ -84,7 +85,7 @@ export default async function AdminRequestDetail({
        training_participants, training_audience_level, training_format, training_objectives,
        psh_present, accommodations, accommodations_details, budget_hint,
        contact_name, contact_email, contact_phone, description, habilitations, custom_habilitations,
-       job_spec_path, status, created_at,
+       job_spec_path, status, created_at, admin_checklist,
        clients(id, company_name)`,
     )
     .eq("id", id)
@@ -443,58 +444,25 @@ export default async function AdminRequestDetail({
             alreadyProposedIds={alreadyProposedIds}
             candidates={candidatesWithScore}
           />
-        ) : isFormation ? (
-          <section className="rounded-[var(--radius-card)] bg-gradient-to-br from-accent-50 via-white to-primary-50 ring-1 ring-accent-200 shadow-sm p-6 animate-fade-up">
-            <header className="flex items-center gap-3 mb-4">
-              <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-accent-500 text-white text-xl shadow-md">
-                🎓
-              </span>
-              <div>
-                <h2 className="text-lg font-extrabold text-primary-900">
-                  Actions à mener
-                </h2>
-                <p className="text-xs text-neutral-600">
-                  Répondez au client sous 48 h après réception.
-                </p>
-              </div>
-            </header>
-            <ul className="space-y-2 text-sm">
-              <li className="flex items-start gap-2">
-                <span className="mt-0.5">1️⃣</span>
-                <span>
-                  Étudier la demande (dates souhaitées, nombre de participants,
-                  financement, aménagements PSH si nécessaire).
-                </span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="mt-0.5">2️⃣</span>
-                <span>
-                  Proposer une ou plusieurs <strong>dates réalisables</strong>{" "}
-                  par email ou téléphone.
-                </span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="mt-0.5">3️⃣</span>
-                <span>
-                  Envoyer le <strong>devis sous 48 h maximum</strong> (outil
-                  automatisé à venir).
-                </span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="mt-0.5">4️⃣</span>
-                <span>
-                  Planifier la session et stocker les pièces (convention,
-                  programme, émargements).
-                </span>
-              </li>
-            </ul>
-            <div className="mt-5 pt-5 border-t border-primary-200/50 text-xs text-neutral-600 italic">
-              💡 La génération automatique de devis et le suivi de session
-              seront ajoutés à la prochaine phase.
-            </div>
-          </section>
-        ) : null}
+        ) : (
+          <AdminChecklist
+            requestId={request.id}
+            requestType={requestType}
+            initial={(request.admin_checklist ?? {}) as Record<string, { done: boolean; done_at: string | null }>}
+          />
+        )}
       </div>
+
+      {/* Checklist de suivi — aussi disponible pour les recrutements, en dessous du panneau candidats */}
+      {isRecruitment && (
+        <div className="mt-6">
+          <AdminChecklist
+            requestId={request.id}
+            requestType={requestType}
+            initial={(request.admin_checklist ?? {}) as Record<string, { done: boolean; done_at: string | null }>}
+          />
+        </div>
+      )}
     </div>
   );
 }
