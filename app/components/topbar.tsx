@@ -49,7 +49,10 @@ export function Topbar({ role, userName, userCompany }: TopbarProps) {
               <span className="text-primary-700">ASCV</span>{" "}
               <span className="text-accent-500">CONSEILS</span>
             </span>
-            <span className="text-[10px] italic text-neutral-500">
+            <span
+              className="text-[9px] italic text-neutral-500"
+              style={{ fontFamily: "'Times New Roman', Times, serif" }}
+            >
               Recruter avec stratégie, grandir avec excellence
             </span>
           </span>

@@ -15,6 +15,10 @@ const nextConfig: NextConfig = {
         pathname: "/logo.png",
         search: "?v=ascv1",
       },
+      {
+        pathname: "/logo.png",
+        search: "?v=ascv2",
+      },
     ],
   },
 };

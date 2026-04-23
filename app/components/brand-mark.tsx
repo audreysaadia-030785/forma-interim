@@ -9,15 +9,15 @@ type BrandMarkProps = {
 };
 
 const SIZE_MAP = {
-  sm: { wrap: "h-10 w-24", px: 96 },
-  md: { wrap: "h-14 w-32", px: 128 },
-  lg: { wrap: "h-24 w-56", px: 224 },
-  xl: { wrap: "h-40 w-72", px: 288 },
+  sm: { wrap: "h-10 w-10", px: 40 },
+  md: { wrap: "h-14 w-14", px: 56 },
+  lg: { wrap: "h-32 w-32", px: 128 },
+  xl: { wrap: "h-56 w-56", px: 224 },
 } as const;
 
 /**
- * Logo officiel ASCV CONSEILS (/public/logo.png) sur fond clair.
- * Le logo est rectangulaire — on l'affiche tel quel, sans recadrage.
+ * Logo officiel ASCV CONSEILS — version dorée sur fond transparent.
+ * Pas de cadre / pas de fond, le logo est posé directement sur la page.
  */
 export function BrandMark({
   variant = "dark",
@@ -30,20 +30,14 @@ export function BrandMark({
 
   return (
     <div className="flex items-center gap-3">
-      <div
-        className={`relative ${wrap} shrink-0 overflow-hidden rounded-xl ${
-          isLight
-            ? "bg-white/95 ring-1 ring-white/40 shadow-xl shadow-primary-900/30"
-            : "bg-white ring-1 ring-neutral-200 shadow-sm"
-        }`}
-      >
+      <div className={`relative ${wrap} shrink-0`}>
         <Image
-          src="/logo.png?v=ascv1"
+          src="/logo.png?v=ascv2"
           alt="Logo ASCV CONSEILS"
           fill
           sizes={`${px}px`}
           priority
-          className="object-contain p-2"
+          className="object-contain"
         />
       </div>
 
@@ -56,9 +50,10 @@ export function BrandMark({
             <span className="text-accent-500">CONSEILS</span>
           </span>
           <span
-            className={`text-[11px] italic tracking-wide ${
+            className={`text-[9px] tracking-wide font-serif italic ${
               isLight ? "text-primary-100" : "text-neutral-600"
             }`}
+            style={{ fontFamily: "'Times New Roman', Times, serif" }}
           >
             Recruter avec stratégie, grandir avec excellence
           </span>

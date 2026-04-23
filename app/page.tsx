@@ -25,43 +25,50 @@ export default function LoginPage() {
               <span className="text-accent-300">grandir avec excellence.</span>
             </h1>
             <p className="text-primary-100 text-lg leading-relaxed">
-              Déposez vos demandes de recrutement (CDD, CDI, missions
-              ponctuelles) en quelques secondes. Nous vous proposons les
-              meilleurs candidats, vous validez.
+              Déposez ici toutes vos demandes — <strong>recrutement</strong>{" "}
+              (CDD, CDI), <strong>accompagnement RH</strong> ou{" "}
+              <strong>formation</strong>. Nous mettons notre expertise à votre
+              service pour vous proposer les solutions les plus adaptées à vos
+              enjeux stratégiques.
             </p>
 
             <ul className="flex flex-col gap-3 pt-4">
-              {["Rapidité", "Suivi en temps réel", "Candidats qualifiés"].map(
-                (label, index) => (
-                  <li
-                    key={label}
-                    className="group inline-flex items-center gap-3 self-start rounded-full bg-white/10 backdrop-blur px-4 py-2 text-sm font-medium text-white ring-1 ring-white/15 shadow-lg shadow-primary-900/10 cursor-default animate-slide-in hover:bg-white/20 hover:ring-accent-400/50 hover:scale-[1.06] hover:-translate-y-0.5 transition-all duration-300 ease-out"
-                    style={{ animationDelay: `${index * 180 + 200}ms` }}
-                  >
-                    <span className="flex h-9 w-9 items-center justify-center rounded-full bg-accent-500/90 text-white shadow-lg shadow-accent-500/25 transition-transform duration-300 group-hover:translate-x-1.5 group-hover:bg-accent-400">
-                      <svg
-                        viewBox="0 0 20 20"
-                        fill="none"
-                        className="h-5 w-5"
-                        aria-hidden="true"
-                      >
-                        <path
-                          d="M4.5 10h11m0 0L10 4.5M15.5 10 10 15.5"
-                          stroke="currentColor"
-                          strokeWidth="2.6"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                      </svg>
-                    </span>
-                    <span className="tracking-wide">{label}</span>
-                  </li>
-                ),
-              )}
+              {[
+                "Recrutement CDD / CDI",
+                "Accompagnement RH",
+                "Formation sur mesure",
+              ].map((label, index) => (
+                <li
+                  key={label}
+                  className="group inline-flex items-center gap-3 self-start rounded-full bg-white/10 backdrop-blur px-4 py-2 text-sm font-medium text-white ring-1 ring-white/15 shadow-lg shadow-primary-900/10 cursor-default animate-slide-in hover:bg-white/20 hover:ring-accent-400/50 hover:scale-[1.06] hover:-translate-y-0.5 transition-all duration-300 ease-out"
+                  style={{ animationDelay: `${index * 180 + 200}ms` }}
+                >
+                  <span className="flex h-9 w-9 items-center justify-center rounded-full bg-accent-500/90 text-white shadow-lg shadow-accent-500/25 transition-transform duration-300 group-hover:translate-x-1.5 group-hover:bg-accent-400">
+                    <svg
+                      viewBox="0 0 20 20"
+                      fill="none"
+                      className="h-5 w-5"
+                      aria-hidden="true"
+                    >
+                      <path
+                        d="M4.5 10h11m0 0L10 4.5M15.5 10 10 15.5"
+                        stroke="currentColor"
+                        strokeWidth="2.6"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                  </span>
+                  <span className="tracking-wide">{label}</span>
+                </li>
+              ))}
             </ul>
           </div>
 
-          <p className="text-sm text-primary-200/80">
+          <p
+            className="text-sm text-primary-200/80 mt-12"
+            style={{ fontFamily: "'Times New Roman', Times, serif" }}
+          >
             © {new Date().getFullYear()} ASCV CONSEILS — Tous droits réservés
           </p>
         </div>
