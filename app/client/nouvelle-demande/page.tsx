@@ -40,8 +40,8 @@ export default function ChooseRequestTypePage() {
           href="/client/nouvelle-demande/formation"
           available
           title="Formation"
-          subtitle="Catalogue de 123 formations"
-          description="Faites monter en compétences vos équipes grâce à nos formations Qualiopi en BTP, sécurité, management, IA, RH et bien plus."
+          subtitle="Notre offre"
+          description="Faites monter en compétences vos équipes : formations réglementaires, sécurité & prévention, développement de compétences, soft skills… ou toute autre demande que nous étudierons sur mesure."
           icon="academy"
           delay={120}
         />
