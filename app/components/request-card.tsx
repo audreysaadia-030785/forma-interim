@@ -59,15 +59,38 @@ export function RequestCard({ request, index = 0, basePath = "/client" }: Props)
             label="Démarrage"
             value={formatShortDate(request.startDate)}
           />
-          <Fact icon="clock" label="Durée" value={request.duration} />
+          <Fact
+            icon="clock"
+            label={request.contractType ? "Contrat" : "Durée"}
+            value={
+              request.contractType
+                ? request.contractType.toUpperCase() +
+                  (request.cddDurationMonths
+                    ? ` ${request.cddDurationMonths}m`
+                    : "")
+                : (request.duration ?? "—")
+            }
+          />
           <Fact icon="pin" label="Lieu" value={request.location} />
         </div>
 
         <div className="mt-5 flex items-center justify-between border-t border-neutral-100 pt-4">
           <span className="text-sm text-neutral-600">
-            <span className="font-semibold text-primary-900">
-              {request.hourlyRate.toFixed(2)} €/h
-            </span>
+            {request.salaryMin !== null && request.salaryMin !== undefined ? (
+              <span className="font-semibold text-primary-900">
+                {request.salaryMin.toLocaleString("fr-FR")}
+                {request.salaryMax
+                  ? ` – ${request.salaryMax.toLocaleString("fr-FR")}`
+                  : ""}
+                {" "}€ brut/an
+              </span>
+            ) : request.hourlyRate ? (
+              <span className="font-semibold text-primary-900">
+                {request.hourlyRate.toFixed(2)} €/h
+              </span>
+            ) : (
+              <span className="text-neutral-400">—</span>
+            )}
             {request.meals && (
               <span className="text-neutral-500">
                 {" "}

@@ -5,14 +5,13 @@ import { redirect } from "next/navigation";
 import { createClient as createServerClient, createServiceClient } from "@/lib/supabase/server";
 import { sendNewRequestAdminEmail } from "@/lib/email";
 
-export async function submitRequestAction(formData: FormData) {
+export async function submitRecruitmentRequestAction(formData: FormData) {
   const supabase = await createServerClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return { ok: false, error: "Non authentifié" };
 
-  // Retrouver le client rattaché à ce user.
   const { data: clientRow } = await supabase
     .from("clients")
     .select("id, active")
@@ -22,24 +21,31 @@ export async function submitRequestAction(formData: FormData) {
   if (!clientRow) return { ok: false, error: "Aucun compte client lié à cet utilisateur." };
   if (!clientRow.active) return { ok: false, error: "Votre compte est désactivé. Contactez ASCV CONSEILS." };
 
-  // Lire tous les champs du formulaire.
+  // ---- Champs ----
   const jobLabel = String(formData.get("jobLabel") || "").trim();
   const jobCode = String(formData.get("jobCode") || "").trim() || null;
   const headcount = Number(formData.get("headcount") || 1);
+  const contractType = String(formData.get("contractType") || "cdi");
+  const cddDurationMonths = formData.get("cddDurationMonths")
+    ? Number(formData.get("cddDurationMonths"))
+    : null;
+  const experienceLevel = String(formData.get("experienceLevel") || "confirme");
+  const educationLevel = String(formData.get("educationLevel") || "").trim() || null;
   const habilitations = JSON.parse(String(formData.get("habilitations") || "[]"));
   const customHabilitations = JSON.parse(String(formData.get("customHabilitations") || "[]"));
   const description = String(formData.get("description") || "").trim() || null;
 
   const startDate = String(formData.get("startDate") || "");
-  const durationValue = Number(formData.get("durationValue") || 0);
-  const durationUnit = String(formData.get("durationUnit") || "mois");
+  const trialPeriodMonths = formData.get("trialPeriodMonths")
+    ? Number(formData.get("trialPeriodMonths"))
+    : null;
   const location = String(formData.get("location") || "").trim();
+  const remoteWork = String(formData.get("remoteWork") || "none");
 
-  const hourlyRate = Number(formData.get("hourlyRate") || 0);
-  const meals = formData.get("meals") ? Number(formData.get("meals")) : null;
-  const travelBonus = formData.get("travelBonus") ? Number(formData.get("travelBonus")) : null;
-  const transportAllowance = formData.get("transportAllowance") ? Number(formData.get("transportAllowance")) : null;
-  const otherPremium = String(formData.get("otherPremium") || "").trim() || null;
+  const salaryMin = formData.get("salaryMin") ? Number(formData.get("salaryMin")) : null;
+  const salaryMax = formData.get("salaryMax") ? Number(formData.get("salaryMax")) : null;
+  const variablePay = String(formData.get("variablePay") || "").trim() || null;
+  const benefits = String(formData.get("benefits") || "").trim() || null;
 
   const contactName = String(formData.get("contactName") || "").trim();
   const contactEmail = String(formData.get("contactEmail") || "").trim();
@@ -47,13 +53,17 @@ export async function submitRequestAction(formData: FormData) {
 
   const jobSpec = formData.get("jobSpec") as File | null;
 
-  if (!jobLabel || !startDate || !durationValue || !location || !hourlyRate || !contactName || !contactEmail || !contactPhone) {
+  // ---- Validations ----
+  if (!jobLabel || !startDate || !location || salaryMin === null || !contactName || !contactEmail || !contactPhone) {
     return { ok: false, error: "Tous les champs obligatoires doivent être remplis." };
+  }
+  if (contractType === "cdd" && !cddDurationMonths) {
+    return { ok: false, error: "La durée du CDD est obligatoire." };
   }
 
   const admin = createServiceClient();
 
-  // Upload éventuel de la fiche de poste.
+  // Upload fiche de poste
   let jobSpecPath: string | null = null;
   if (jobSpec && jobSpec.size > 0) {
     const timestamp = Date.now();
@@ -71,34 +81,39 @@ export async function submitRequestAction(formData: FormData) {
     jobSpecPath = path;
   }
 
-  // Retrouver le nom de l'entreprise pour l'email.
+  // Récupère le nom client pour l'email
   const { data: fullClient } = await admin
     .from("clients")
     .select("company_name")
     .eq("id", clientRow.id)
     .single();
 
-  // Insert de la demande. La reference est générée automatiquement par trigger.
+  // Insert
   const { error: insertError, data: insertedRow } = await admin
     .from("requests")
     .insert({
       client_id: clientRow.id,
       created_by: user.id,
+      request_type: "recrutement",
       job_label: jobLabel,
       rome_code: jobCode,
       headcount,
+      contract_type: contractType,
+      cdd_duration_months: cddDurationMonths,
+      experience_level: experienceLevel,
+      education_level: educationLevel,
       habilitations,
       custom_habilitations: customHabilitations,
       description,
       start_date: startDate,
-      duration_value: durationValue,
-      duration_unit: durationUnit,
+      trial_period_months: trialPeriodMonths,
       location,
-      hourly_rate_eur: hourlyRate,
-      meal_bonus_eur: meals,
-      travel_bonus_eur: travelBonus,
-      transport_allowance_eur: transportAllowance,
-      other_premium: otherPremium,
+      remote_work: remoteWork,
+      salary_min_eur: salaryMin,
+      salary_max_eur: salaryMax,
+      salary_period: "annual",
+      variable_pay: variablePay,
+      benefits,
       contact_name: contactName,
       contact_email: contactEmail,
       contact_phone: contactPhone,
@@ -114,7 +129,7 @@ export async function submitRequestAction(formData: FormData) {
     return { ok: false, error: insertError.message };
   }
 
-  // Email à l'admin — best-effort.
+  // Email admin (best-effort)
   try {
     await sendNewRequestAdminEmail({
       requestId: insertedRow.id,
@@ -126,7 +141,7 @@ export async function submitRequestAction(formData: FormData) {
       location,
     });
   } catch (e) {
-    console.error("[submitRequest] admin notification failed:", e);
+    console.error("[submitRecruitment] admin notification failed:", e);
   }
 
   revalidatePath("/client");

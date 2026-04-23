@@ -29,7 +29,10 @@ export default async function ClientDashboardPage({
   let query = supabase
     .from("requests")
     .select(
-      "id, reference, client_id, job_label, headcount, start_date, duration_value, duration_unit, location, hourly_rate_eur, meal_bonus_eur, status, created_at, clients(company_name)",
+      `id, reference, client_id, job_label, headcount, start_date, duration_value, duration_unit, location,
+       hourly_rate_eur, meal_bonus_eur, status, created_at,
+       request_type, contract_type, cdd_duration_months, salary_min_eur, salary_max_eur,
+       clients(company_name)`,
     )
     .order("created_at", { ascending: false });
 
@@ -46,9 +49,11 @@ export default async function ClientDashboardPage({
     poste: r.job_label,
     headcount: r.headcount,
     startDate: r.start_date,
-    duration: `${r.duration_value} ${r.duration_unit}`,
+    duration: r.duration_value && r.duration_unit
+      ? `${r.duration_value} ${r.duration_unit}`
+      : null,
     location: r.location,
-    hourlyRate: Number(r.hourly_rate_eur),
+    hourlyRate: r.hourly_rate_eur ? Number(r.hourly_rate_eur) : null,
     meals: r.meal_bonus_eur ? Number(r.meal_bonus_eur) : null,
     bonuses: null,
     allowances: null,
@@ -59,6 +64,11 @@ export default async function ClientDashboardPage({
     status: r.status,
     createdAt: r.created_at,
     candidates: [],
+    requestType: r.request_type,
+    contractType: r.contract_type,
+    cddDurationMonths: r.cdd_duration_months,
+    salaryMin: r.salary_min_eur ? Number(r.salary_min_eur) : null,
+    salaryMax: r.salary_max_eur ? Number(r.salary_max_eur) : null,
   }));
 
   // KPIs (sur l'ensemble, pas filtrés).

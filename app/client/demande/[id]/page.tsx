@@ -7,6 +7,27 @@ import { CancelRequestButton } from "./cancel-request-button";
 
 export const dynamic = "force-dynamic";
 
+const CONTRACT_LABELS: Record<string, string> = {
+  cdi: "CDI",
+  cdd: "CDD",
+  alternance: "Alternance",
+  stage: "Stage",
+  freelance: "Freelance",
+};
+
+const EXPERIENCE_LABELS: Record<string, string> = {
+  junior: "Junior (0-2 ans)",
+  confirme: "Confirmé (3-7 ans)",
+  senior: "Senior (8-15 ans)",
+  expert: "Expert (15+ ans)",
+};
+
+const REMOTE_LABELS: Record<string, string> = {
+  none: "100% présentiel",
+  hybrid: "Hybride",
+  full: "100% télétravail",
+};
+
 export default async function RequestDetailPage({
   params,
 }: {
@@ -18,8 +39,11 @@ export default async function RequestDetailPage({
   const { data: request } = await supabase
     .from("requests")
     .select(
-      `id, reference, job_label, rome_code, headcount, start_date, duration_value, duration_unit, location,
+      `id, reference, request_type, job_label, rome_code, headcount, start_date, duration_value, duration_unit, location,
        hourly_rate_eur, meal_bonus_eur, travel_bonus_eur, transport_allowance_eur, other_premium,
+       contract_type, cdd_duration_months, experience_level, education_level,
+       salary_min_eur, salary_max_eur, salary_period, variable_pay, benefits,
+       remote_work, trial_period_months,
        contact_name, contact_email, contact_phone, description, status, created_at`,
     )
     .eq("id", id)
@@ -28,6 +52,7 @@ export default async function RequestDetailPage({
   if (!request) notFound();
 
   const meta = STATUS_META[request.status as RequestStatus];
+  const isRecruitment = request.request_type === "recrutement" || !!request.contract_type;
 
   const { data: proposals } = await supabase
     .from("proposals")
@@ -50,31 +75,27 @@ export default async function RequestDetailPage({
           Tableau de bord
         </Link>
         <span>/</span>
-        <span className="text-primary-700 font-semibold truncate">
-          {request.job_label}
-        </span>
+        <span className="text-primary-700 font-semibold truncate">{request.job_label}</span>
       </nav>
 
       <header className="mb-8 rounded-[var(--radius-card)] bg-white ring-1 ring-neutral-200 shadow-sm p-6 sm:p-8 animate-fade-up">
         <div className="flex items-start justify-between gap-4 flex-wrap">
           <div>
             <div className="flex items-center gap-3 mb-3 flex-wrap">
-              <span className="text-xs font-mono text-neutral-500">
-                {request.reference}
-              </span>
-              <span
-                className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ${meta.badge}`}
-              >
+              <span className="text-xs font-mono text-neutral-500">{request.reference}</span>
+              <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ${meta.badge}`}>
                 <span className={`h-1.5 w-1.5 rounded-full ${meta.dot}`} />
                 {meta.label}
               </span>
+              {request.contract_type && (
+                <span className="inline-flex items-center rounded-full bg-accent-100 px-2.5 py-1 text-xs font-bold text-accent-700">
+                  {CONTRACT_LABELS[request.contract_type] ?? request.contract_type}
+                  {request.cdd_duration_months ? ` · ${request.cdd_duration_months} mois` : ""}
+                </span>
+              )}
             </div>
-            <h1 className="text-3xl font-extrabold tracking-tight text-primary-900">
-              {request.job_label}
-            </h1>
-            <p className="mt-1 text-sm text-neutral-600">
-              Demande créée le {formatDate(request.created_at)}
-            </p>
+            <h1 className="text-3xl font-extrabold tracking-tight text-primary-900">{request.job_label}</h1>
+            <p className="mt-1 text-sm text-neutral-600">Demande créée le {formatDate(request.created_at)}</p>
           </div>
 
           {(request.status === "pending" || request.status === "proposed") && (
@@ -86,8 +107,16 @@ export default async function RequestDetailPage({
           <KPI label="Postes" value={request.headcount} />
           <KPI label="Démarrage" value={formatDate(request.start_date)} />
           <KPI
-            label="Durée"
-            value={`${request.duration_value} ${request.duration_unit}`}
+            label={isRecruitment ? "Période d'essai" : "Durée"}
+            value={
+              isRecruitment
+                ? request.trial_period_months
+                  ? `${request.trial_period_months} mois`
+                  : "—"
+                : request.duration_value && request.duration_unit
+                  ? `${request.duration_value} ${request.duration_unit}`
+                  : "—"
+            }
           />
           <KPI label="Lieu" value={request.location} />
         </div>
@@ -95,37 +124,51 @@ export default async function RequestDetailPage({
 
       <div className="grid lg:grid-cols-[1fr_2fr] gap-6">
         <aside className="space-y-6">
-          <InfoCard title="Rémunération">
-            <Row
-              label="Taux horaire"
-              value={`${Number(request.hourly_rate_eur).toFixed(2)} € brut/h`}
-              highlight
-            />
-            <Row
-              label="Prime repas"
-              value={
-                request.meal_bonus_eur
-                  ? `${Number(request.meal_bonus_eur).toFixed(2)} €/jour`
-                  : "—"
-              }
-            />
-            <Row
-              label="Prime trajet"
-              value={
-                request.travel_bonus_eur
-                  ? `${Number(request.travel_bonus_eur).toFixed(2)} €/jour`
-                  : "—"
-              }
-            />
-            <Row
-              label="Indemnité transport"
-              value={
-                request.transport_allowance_eur
-                  ? `${Number(request.transport_allowance_eur).toFixed(2)} €/jour`
-                  : "—"
-              }
-            />
-            <Row label="Autre" value={request.other_premium ?? "—"} />
+          <InfoCard title={isRecruitment ? "Rémunération & avantages" : "Rémunération"}>
+            {isRecruitment ? (
+              <>
+                <Row
+                  label="Salaire annuel brut"
+                  value={
+                    request.salary_min_eur
+                      ? `${Number(request.salary_min_eur).toLocaleString("fr-FR")}${
+                          request.salary_max_eur
+                            ? ` – ${Number(request.salary_max_eur).toLocaleString("fr-FR")}`
+                            : ""
+                        } € / an`
+                      : "—"
+                  }
+                  highlight
+                />
+                <Row label="Variable" value={request.variable_pay ?? "—"} />
+                <Row label="Avantages" value={request.benefits ?? "—"} />
+                <Row
+                  label="Télétravail"
+                  value={request.remote_work ? REMOTE_LABELS[request.remote_work] ?? request.remote_work : "—"}
+                />
+                {request.experience_level && (
+                  <Row
+                    label="Expérience attendue"
+                    value={EXPERIENCE_LABELS[request.experience_level] ?? request.experience_level}
+                  />
+                )}
+                {request.education_level && (
+                  <Row label="Niveau d'études" value={request.education_level} />
+                )}
+              </>
+            ) : (
+              <>
+                <Row
+                  label="Taux horaire"
+                  value={request.hourly_rate_eur ? `${Number(request.hourly_rate_eur).toFixed(2)} € brut/h` : "—"}
+                  highlight
+                />
+                <Row label="Prime repas" value={request.meal_bonus_eur ? `${Number(request.meal_bonus_eur).toFixed(2)} €/jour` : "—"} />
+                <Row label="Prime trajet" value={request.travel_bonus_eur ? `${Number(request.travel_bonus_eur).toFixed(2)} €/jour` : "—"} />
+                <Row label="Indemnité transport" value={request.transport_allowance_eur ? `${Number(request.transport_allowance_eur).toFixed(2)} €/jour` : "—"} />
+                <Row label="Autre" value={request.other_premium ?? "—"} />
+              </>
+            )}
           </InfoCard>
 
           <InfoCard title="Contact">
@@ -135,10 +178,8 @@ export default async function RequestDetailPage({
           </InfoCard>
 
           {request.description && (
-            <InfoCard title="Caractéristiques">
-              <p className="text-sm text-neutral-700 whitespace-pre-wrap leading-relaxed">
-                {request.description}
-              </p>
+            <InfoCard title="Description">
+              <p className="text-sm text-neutral-700 whitespace-pre-wrap leading-relaxed">{request.description}</p>
             </InfoCard>
           )}
         </aside>
@@ -155,9 +196,7 @@ export default async function RequestDetailPage({
 function KPI({ label, value }: { label: string; value: string | number }) {
   return (
     <div className="rounded-xl bg-neutral-50 p-3 ring-1 ring-neutral-200">
-      <p className="text-[11px] uppercase tracking-wider text-neutral-500 font-semibold">
-        {label}
-      </p>
+      <p className="text-[11px] uppercase tracking-wider text-neutral-500 font-semibold">{label}</p>
       <p className="mt-0.5 font-bold text-primary-900 truncate">{value}</p>
     </div>
   );
@@ -166,35 +205,17 @@ function KPI({ label, value }: { label: string; value: string | number }) {
 function InfoCard({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section className="rounded-[var(--radius-card)] bg-white ring-1 ring-neutral-200 shadow-sm p-6 animate-fade-up">
-      <h3 className="text-sm font-bold text-primary-900 mb-3 uppercase tracking-wider">
-        {title}
-      </h3>
+      <h3 className="text-sm font-bold text-primary-900 mb-3 uppercase tracking-wider">{title}</h3>
       <div className="space-y-2.5">{children}</div>
     </section>
   );
 }
 
-function Row({
-  label,
-  value,
-  highlight,
-}: {
-  label: string;
-  value: string;
-  highlight?: boolean;
-}) {
+function Row({ label, value, highlight }: { label: string; value: string; highlight?: boolean }) {
   return (
-    <div className="flex items-center justify-between gap-3 text-sm">
-      <span className="text-neutral-600">{label}</span>
-      <span
-        className={
-          highlight
-            ? "font-extrabold text-accent-600"
-            : "font-semibold text-primary-900 text-right"
-        }
-      >
-        {value}
-      </span>
+    <div className="flex items-start justify-between gap-3 text-sm">
+      <span className="text-neutral-600 shrink-0">{label}</span>
+      <span className={highlight ? "font-extrabold text-accent-600 text-right" : "font-semibold text-primary-900 text-right"}>{value}</span>
     </div>
   );
 }

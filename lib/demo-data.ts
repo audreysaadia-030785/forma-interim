@@ -143,19 +143,35 @@ export type InterimRequest = {
   poste: string;
   headcount: number;
   startDate: string; // ISO
-  duration: string; // "3 mois", "2 semaines"…
+  /** Pour les anciennes demandes intérim — null en recrutement. */
+  duration: string | null;
   location: string;
-  hourlyRate: number; // en €
-  meals: number | null; // panier
-  bonuses: string | null; // primes
-  allowances: string | null; // indemnités
+  /** Pour les anciennes demandes intérim — null en recrutement. */
+  hourlyRate: number | null;
+  meals: number | null;
+  bonuses: string | null;
+  allowances: string | null;
   contactName: string;
   contactEmail: string;
   contactPhone: string;
   description: string;
   status: RequestStatus;
-  createdAt: string; // ISO
+  createdAt: string;
   candidates: Candidate[];
+
+  // Champs recrutement (CDD/CDI)
+  requestType?: "recrutement" | "formation" | "accompagnement_rh";
+  contractType?: string | null; // cdi, cdd, alternance, stage, freelance
+  cddDurationMonths?: number | null;
+  experienceLevel?: string | null;
+  salaryMin?: number | null;
+  salaryMax?: number | null;
+  salaryPeriod?: string | null; // 'annual' | 'monthly'
+  variablePay?: string | null;
+  benefits?: string | null;
+  remoteWork?: string | null; // 'none' | 'hybrid' | 'full'
+  trialPeriodMonths?: number | null;
+  educationLevel?: string | null;
 };
 
 export type CandidateStatus = "pending" | "validated" | "refused";
