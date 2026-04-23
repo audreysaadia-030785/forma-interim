@@ -2,7 +2,10 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient as createServerClient, createServiceClient } from "@/lib/supabase/server";
-import { sendProposalDecisionEmail } from "@/lib/email";
+import {
+  sendProposalDecisionEmail,
+  sendRequestCancelledEmail,
+} from "@/lib/email";
 
 export async function decideProposalAction(
   proposalId: string,
@@ -91,6 +94,29 @@ export async function cancelMyRequestAction(requestId: string) {
     .update({ status: "cancelled" })
     .eq("id", requestId);
   if (error) return { ok: false, error: error.message };
+
+  // Email admin (best-effort)
+  try {
+    const admin = createServiceClient();
+    const { data: req } = await admin
+      .from("requests")
+      .select("reference, job_label, request_type, clients(company_name)")
+      .eq("id", requestId)
+      .single();
+    if (req) {
+      await sendRequestCancelledEmail({
+        requestId,
+        reference: req.reference ?? "",
+        // @ts-expect-error relation
+        clientCompanyName: req.clients?.company_name ?? "Client",
+        jobLabel: req.job_label ?? "",
+        requestType: req.request_type ?? "recrutement",
+      });
+    }
+  } catch (e) {
+    console.error("[cancelMyRequest] notification failed:", e);
+  }
+
   revalidatePath("/client");
   revalidatePath(`/client/demande/${requestId}`);
   return { ok: true };

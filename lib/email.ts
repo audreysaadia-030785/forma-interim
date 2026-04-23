@@ -225,6 +225,75 @@ export async function sendCandidatesProposedEmail(params: {
   });
 }
 
+/** Email à l'admin quand un client annule une demande. */
+export async function sendRequestCancelledEmail(params: {
+  requestId: string;
+  reference: string;
+  clientCompanyName: string;
+  jobLabel: string;
+  requestType: string;
+}) {
+  const url = `${APP_URL}/admin/demande/${params.requestId}`;
+  const typeLabel =
+    params.requestType === "formation"
+      ? "Formation"
+      : params.requestType === "accompagnement_rh"
+        ? "Accompagnement RH"
+        : "Recrutement";
+  const html = layout({
+    title: `Demande annulée — ${params.reference}`,
+    content: `
+      <h1 style="font-size:22px;font-weight:800;color:#2c1f15;margin:0 0 12px;">
+        🚫 Demande annulée par le client
+      </h1>
+      <p style="font-size:15px;line-height:1.6;color:#3f3f46;margin:0 0 16px;">
+        <strong>${escapeHtml(params.clientCompanyName)}</strong> a annulé sa demande de <strong>${escapeHtml(typeLabel)}</strong>.
+      </p>
+      <table role="presentation" cellpadding="0" cellspacing="0" style="background:#f4f4f5;border-radius:12px;padding:16px;margin:16px 0;width:100%;">
+        <tr><td style="font-size:12px;color:#71717a;padding:4px 12px;">Référence</td><td style="font-size:14px;font-weight:600;font-family:monospace;padding:4px 12px;">${escapeHtml(params.reference)}</td></tr>
+        <tr><td style="font-size:12px;color:#71717a;padding:4px 12px;">Intitulé</td><td style="font-size:14px;font-weight:600;padding:4px 12px;">${escapeHtml(params.jobLabel)}</td></tr>
+      </table>
+      ${button(url, "Voir la demande annulée")}
+    `,
+  });
+
+  return send({
+    to: ADMIN,
+    subject: `🚫 ${params.clientCompanyName} a annulé — ${params.jobLabel} (${params.reference})`,
+    html,
+  });
+}
+
+/** Email à l'admin quand un client coche un rappel RH. */
+export async function sendReminderDoneEmail(params: {
+  clientCompanyName: string;
+  reminderTitle: string;
+  reminderCategory: string | null;
+}) {
+  const url = `${APP_URL}/admin/rh`;
+  const html = layout({
+    title: "Rappel RH traité",
+    content: `
+      <h1 style="font-size:22px;font-weight:800;color:#2c1f15;margin:0 0 12px;">
+        ✅ Rappel RH traité par le client
+      </h1>
+      <p style="font-size:15px;line-height:1.6;color:#3f3f46;margin:0 0 16px;">
+        <strong>${escapeHtml(params.clientCompanyName)}</strong> a marqué comme traité le rappel&nbsp;:
+      </p>
+      <p style="font-size:16px;font-weight:700;color:#2c1f15;padding:12px 16px;background:#f4f4f5;border-radius:12px;margin:16px 0;">
+        ${escapeHtml(params.reminderTitle)}
+      </p>
+      ${button(url, "Voir l'espace RH")}
+    `,
+  });
+
+  return send({
+    to: ADMIN,
+    subject: `✅ ${params.clientCompanyName} — Rappel RH traité : ${params.reminderTitle}`,
+    html,
+  });
+}
+
 /** Email à l'admin quand un client valide ou refuse un candidat. */
 export async function sendProposalDecisionEmail(params: {
   requestId: string;

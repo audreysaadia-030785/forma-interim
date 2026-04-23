@@ -5,6 +5,7 @@ import {
   createClient as createServerClient,
   createServiceClient,
 } from "@/lib/supabase/server";
+import { sendReminderDoneEmail } from "@/lib/email";
 
 async function requireAdmin() {
   const supabase = await createServerClient();
@@ -269,6 +270,28 @@ export async function toggleReminderDoneAction(
     })
     .eq("id", id);
   if (error) return { ok: false as const, error: error.message };
+
+  // Email admin quand le client coche "fait" (pas quand il décoche).
+  if (done) {
+    try {
+      const admin = createServiceClient();
+      const { data: reminder } = await admin
+        .from("hr_reminders")
+        .select("title, category, clients(company_name)")
+        .eq("id", id)
+        .single();
+      if (reminder) {
+        await sendReminderDoneEmail({
+          // @ts-expect-error relation
+          clientCompanyName: reminder.clients?.company_name ?? "Client",
+          reminderTitle: reminder.title,
+          reminderCategory: reminder.category,
+        });
+      }
+    } catch (e) {
+      console.error("[toggleReminderDone] email failed:", e);
+    }
+  }
 
   revalidatePath("/client/rh");
   revalidatePath("/client/rh/rappels");
