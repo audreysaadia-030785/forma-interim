@@ -2,18 +2,28 @@
 
 import { Resend } from "resend";
 
-function cleanEnv(val: string | undefined, fallback: string): string {
-  if (!val) return fallback;
-  let v = val.trim();
-  // Retirer une paire de guillemets ou apostrophes qui entoure la valeur
-  if (
-    (v.startsWith('"') && v.endsWith('"')) ||
-    (v.startsWith("'") && v.endsWith("'")) ||
-    (v.startsWith("`") && v.endsWith("`"))
-  ) {
-    v = v.slice(1, -1).trim();
-  }
-  return v || fallback;
+// Regex stricte d'adresse email simple.
+const EMAIL_RE = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/;
+
+const ADMIN_FALLBACK = "contact.audreysaadia@gmail.com";
+const FROM_FALLBACK = "ASCV CONSEILS <onboarding@resend.dev>";
+
+// Extrait une adresse email propre de la valeur brute (ignore tout le bruit).
+function extractTo(raw: string | undefined): { value: string; source: "env" | "fallback" } {
+  if (!raw) return { value: ADMIN_FALLBACK, source: "fallback" };
+  const match = raw.match(EMAIL_RE);
+  return match ? { value: match[0], source: "env" } : { value: ADMIN_FALLBACK, source: "fallback" };
+}
+
+// Nettoie la valeur "from" : guillemets parasites, puis vérifie qu'on a un email.
+function extractFrom(raw: string | undefined): { value: string; source: "env" | "fallback" } {
+  if (!raw) return { value: FROM_FALLBACK, source: "fallback" };
+  let v = raw.trim();
+  while (/^[`'"]/.test(v)) v = v.slice(1);
+  while (/[`'"]$/.test(v)) v = v.slice(0, -1);
+  v = v.trim();
+  if (!EMAIL_RE.test(v)) return { value: FROM_FALLBACK, source: "fallback" };
+  return { value: v, source: "env" };
 }
 
 /** Aperçu "masqué" d'une chaîne pour debug (ne révèle pas tout l'email). */
@@ -29,17 +39,8 @@ export async function sendTestEmailAction() {
   const rawFrom = process.env.EMAIL_FROM;
   const rawTo = process.env.EMAIL_ADMIN;
 
-  let from = cleanEnv(rawFrom, "ASCV CONSEILS <onboarding@resend.dev>");
-  let to = cleanEnv(rawTo, "contact.audreysaadia@gmail.com");
-
-  // Garde-fous : si les valeurs ressemblent à des adresses invalides,
-  // on force les valeurs connues pour garantir un envoi réussi.
-  if (!/@/.test(to) || /[`'"\s]$/.test(to) || /^[`'"]/.test(to)) {
-    to = "contact.audreysaadia@gmail.com";
-  }
-  if (!/@/.test(from) || /[`'"\s]$/.test(from) || /^[`'"]/.test(from)) {
-    from = "ASCV CONSEILS <onboarding@resend.dev>";
-  }
+  const { value: from, source: fromSrc } = extractFrom(rawFrom);
+  const { value: to, source: toSrc } = extractTo(rawTo);
 
   if (!apiKey) {
     return {
@@ -59,14 +60,18 @@ export async function sendTestEmailAction() {
     if (result.error) {
       return {
         ok: false as const,
-        error: `${result.error.message} | FROM=[${preview(from)}] len=${from.length} TO=[${preview(to)}] len=${to.length}`,
+        error: `${result.error.message} | FROM=[${preview(from)}] src=${fromSrc} len=${from.length} | TO=[${preview(to)}] src=${toSrc} len=${to.length} rawToLen=${rawTo?.length ?? 0}`,
       };
     }
-    return { ok: true as const, id: result.data?.id };
+    return {
+      ok: true as const,
+      id: result.data?.id,
+      debug: `TO=${preview(to)} (${toSrc})`,
+    };
   } catch (e) {
     return {
       ok: false as const,
-      error: `${(e as Error).message} | FROM=[${preview(from)}] TO=[${preview(to)}]`,
+      error: `${(e as Error).message} | FROM=[${preview(from)}] src=${fromSrc} | TO=[${preview(to)}] src=${toSrc}`,
     };
   }
 }

@@ -11,23 +11,27 @@ function getResend(): Resend | null {
   return new Resend(key);
 }
 
-// Nettoie et valide une valeur d'env var email ; retombe sur le fallback si
-// la valeur est vide, entourée de guillemets parasites, ou ne contient pas d'@.
-function cleanEmailEnv(val: string | undefined, fallback: string): string {
-  const FALLBACK = fallback;
-  if (!val) return FALLBACK;
+// Regex stricte d'adresse email simple.
+const EMAIL_RE = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/;
+
+// Pour le champ "to" : on extrait UNIQUEMENT une adresse email valide ;
+// si aucune adresse ne peut être extraite, on retombe sur le fallback.
+function cleanToEmail(val: string | undefined, fallback: string): string {
+  if (!val) return fallback;
+  const match = val.match(EMAIL_RE);
+  return match ? match[0] : fallback;
+}
+
+// Pour le champ "from" : on accepte le format "Nom <email@…>" mais on
+// nettoie les guillemets parasites et on vérifie qu'une adresse est présente.
+function cleanFromEmail(val: string | undefined, fallback: string): string {
+  if (!val) return fallback;
   let v = val.trim();
-  if (
-    (v.startsWith('"') && v.endsWith('"')) ||
-    (v.startsWith("'") && v.endsWith("'")) ||
-    (v.startsWith("`") && v.endsWith("`"))
-  ) {
-    v = v.slice(1, -1).trim();
-  }
-  // Si la valeur ne contient pas d'@ ou commence/finit par un caractère suspect,
-  // on utilise le fallback (plus sûr).
-  if (!v.includes("@")) return FALLBACK;
-  if (/^[`'"]|[`'"]$/.test(v)) return FALLBACK;
+  // Retirer guillemets / apostrophes / backticks qui entourent la valeur
+  while (/^[`'"]/.test(v)) v = v.slice(1);
+  while (/[`'"]$/.test(v)) v = v.slice(0, -1);
+  v = v.trim();
+  if (!EMAIL_RE.test(v)) return fallback;
   return v;
 }
 
@@ -43,11 +47,11 @@ function cleanUrlEnv(val: string | undefined, fallback: string): string {
   return v || fallback;
 }
 
-const FROM = cleanEmailEnv(
+const FROM = cleanFromEmail(
   process.env.EMAIL_FROM,
   "ASCV CONSEILS <onboarding@resend.dev>",
 );
-const ADMIN = cleanEmailEnv(
+const ADMIN = cleanToEmail(
   process.env.EMAIL_ADMIN,
   "contact.audreysaadia@gmail.com",
 );
