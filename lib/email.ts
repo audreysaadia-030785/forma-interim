@@ -11,25 +11,47 @@ function getResend(): Resend | null {
   return new Resend(key);
 }
 
-// Nettoie une valeur d'env var : retire guillemets, espaces accidentels.
-function cleanEnv(val: string | undefined, fallback: string): string {
+// Nettoie et valide une valeur d'env var email ; retombe sur le fallback si
+// la valeur est vide, entourée de guillemets parasites, ou ne contient pas d'@.
+function cleanEmailEnv(val: string | undefined, fallback: string): string {
+  const FALLBACK = fallback;
+  if (!val) return FALLBACK;
+  let v = val.trim();
+  if (
+    (v.startsWith('"') && v.endsWith('"')) ||
+    (v.startsWith("'") && v.endsWith("'")) ||
+    (v.startsWith("`") && v.endsWith("`"))
+  ) {
+    v = v.slice(1, -1).trim();
+  }
+  // Si la valeur ne contient pas d'@ ou commence/finit par un caractère suspect,
+  // on utilise le fallback (plus sûr).
+  if (!v.includes("@")) return FALLBACK;
+  if (/^[`'"]|[`'"]$/.test(v)) return FALLBACK;
+  return v;
+}
+
+function cleanUrlEnv(val: string | undefined, fallback: string): string {
   if (!val) return fallback;
   let v = val.trim();
-  if ((v.startsWith('"') && v.endsWith('"')) || (v.startsWith("'") && v.endsWith("'"))) {
+  if (
+    (v.startsWith('"') && v.endsWith('"')) ||
+    (v.startsWith("'") && v.endsWith("'"))
+  ) {
     v = v.slice(1, -1).trim();
   }
   return v || fallback;
 }
 
-const FROM = cleanEnv(
+const FROM = cleanEmailEnv(
   process.env.EMAIL_FROM,
   "ASCV CONSEILS <onboarding@resend.dev>",
 );
-const ADMIN = cleanEnv(
+const ADMIN = cleanEmailEnv(
   process.env.EMAIL_ADMIN,
   "contact.audreysaadia@gmail.com",
 );
-const APP_URL = cleanEnv(
+const APP_URL = cleanUrlEnv(
   process.env.NEXT_PUBLIC_APP_URL,
   "https://ascv-conseils.vercel.app",
 );
