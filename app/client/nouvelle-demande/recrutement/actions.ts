@@ -4,6 +4,30 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient as createServerClient, createServiceClient } from "@/lib/supabase/server";
 import { sendNewRequestAdminEmail } from "@/lib/email";
+import { generateJobDescription } from "@/lib/job-description-generator";
+
+export async function generateJobDescriptionAction(input: {
+  jobLabel: string;
+  jobCode?: string | null;
+  contractType?: string | null;
+  experienceLevel?: string | null;
+}) {
+  if (!input.jobLabel?.trim()) {
+    return { ok: false as const, error: "Sélectionnez d'abord un intitulé de poste." };
+  }
+  // On vérifie qu'on est bien authentifié (pas besoin de role admin).
+  const supabase = await createServerClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { ok: false as const, error: "Non authentifié" };
+
+  try {
+    const text = await generateJobDescription(input);
+    return { ok: true as const, text };
+  } catch (e) {
+    console.error("[generateJobDescription] failed:", e);
+    return { ok: false as const, error: (e as Error).message };
+  }
+}
 
 export async function submitRecruitmentRequestAction(formData: FormData) {
   const supabase = await createServerClient();

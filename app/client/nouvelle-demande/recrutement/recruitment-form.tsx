@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useMemo, useState, useTransition } from "react";
 import { RomeCombobox } from "@/app/components/rome-combobox";
 import { suggestHabilitations } from "@/lib/habilitations";
-import { submitRecruitmentRequestAction } from "./actions";
+import { generateJobDescriptionAction, submitRecruitmentRequestAction } from "./actions";
 
 type ContractType = "cdi" | "cdd" | "alternance" | "stage" | "freelance";
 type ExperienceLevel = "junior" | "confirme" | "senior" | "expert";
@@ -66,6 +66,7 @@ export function RecruitmentForm() {
 
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitting, startSubmitting] = useTransition();
+  const [generatingDescription, startGenerating] = useTransition();
 
   const suggested = useMemo(() => suggestHabilitations(jobLabel), [jobLabel]);
 
@@ -97,6 +98,34 @@ export function RecruitmentForm() {
   function removeCustomHabilitation(h: string) {
     setCustomHabilitations((prev) => prev.filter((x) => x !== h));
   }
+  function handleGenerateDescription() {
+    if (!jobLabel.trim()) {
+      alert("Sélectionnez d'abord un intitulé de poste.");
+      return;
+    }
+    if (
+      description.trim() &&
+      !confirm(
+        "La description actuelle sera remplacée par celle générée par l'IA. Continuer ?",
+      )
+    ) {
+      return;
+    }
+    startGenerating(async () => {
+      const res = await generateJobDescriptionAction({
+        jobLabel,
+        jobCode,
+        contractType,
+        experienceLevel,
+      });
+      if (!res.ok) {
+        alert(`Erreur : ${res.error}`);
+        return;
+      }
+      setDescription(res.text);
+    });
+  }
+
   function toggleChip(chip: string) {
     setDescription((prev) => {
       const trimmed = prev.trim();
@@ -326,8 +355,35 @@ export function RecruitmentForm() {
         </FieldGroup>
 
         <FieldGroup>
-          <Label htmlFor="description">Description du poste <span className="text-neutral-500 font-normal">(missions, environnement, équipe…)</span></Label>
-          <textarea id="description" rows={5} value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Décrivez les missions, l'équipe, l'environnement, les attendus…" className={`${inputClass} resize-y min-h-[120px]`} />
+          <div className="flex items-end justify-between gap-3 mb-1">
+            <Label htmlFor="description">Description du poste <span className="text-neutral-500 font-normal">(missions, environnement, équipe…)</span></Label>
+            <button
+              type="button"
+              onClick={handleGenerateDescription}
+              disabled={generatingDescription || !jobLabel}
+              className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-accent-500 to-accent-600 px-3 py-1.5 text-[11px] font-bold text-white shadow-sm hover:shadow-md hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0 transition-all"
+            >
+              {generatingDescription ? (
+                <>
+                  <svg className="h-3.5 w-3.5 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <circle cx="12" cy="12" r="10" stroke="currentColor" strokeOpacity="0.25" strokeWidth="4" />
+                    <path d="M22 12a10 10 0 0 1-10 10" stroke="currentColor" strokeWidth="4" strokeLinecap="round" />
+                  </svg>
+                  Génération…
+                </>
+              ) : (
+                <>
+                  <svg className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                    <path d="M10 2 L11 7 L16 8 L11 9 L10 14 L9 9 L4 8 L9 7 Z" />
+                    <circle cx="16" cy="3" r="1" />
+                    <circle cx="4" cy="14" r="1" />
+                  </svg>
+                  Générer avec l&apos;IA
+                </>
+              )}
+            </button>
+          </div>
+          <textarea id="description" rows={5} value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Décrivez les missions, l'équipe, l'environnement, les attendus… ou cliquez sur « Générer avec l'IA »." className={`${inputClass} resize-y min-h-[140px]`} />
           {jobLabel && (
             <div className="mt-2">
               <p className="text-xs font-semibold text-neutral-600 mb-1.5">Suggestions adaptées au poste</p>
